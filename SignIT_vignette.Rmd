@@ -1,0 +1,225 @@
+---
+title: "SignIT Vignette"
+author: "Eric Zhao"
+date: "September 20, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.path = 'figures/')
+```
+
+# SignIT: Mutation Signature Analysis in Individual Tumours with MCMC
+
+Cancer is a disease characterized by the formation of tumours composed of cells which divide aggressively due to the loss of specialized functions and growth inhibition. Cancers arise due to the stepwise accumulation of spontaneous genetic mutations specific to the tumour, also known as somatic mutations. These mutations arise from many causes, including chemical mutagens, intracellular mutational processes, and deficient DNA repair genes. 
+
+While some mutations may contribute directly to tumour invasiveness, the majority are thought to be "passengers," with minimal impact on the evolutionary fitness of cancer cells. Nevertheless, it is possible to glean insights about a cancer's molecular history from these passengers. They provide evidence of the mutational processes which drove the acquisition of mutations in cancer.
+
+Recent research has described characteristic signatures of mutation deciphered from cancer whole genome and exome sequences.
+
+This vignette demonstrates the use of SignIT to decipher mutation signatures in individual tumours and explore the solution space using Markov Chain Monte Carlo techniques.
+
+# SignIT on a Patient's Mutation Catalog
+
+## The Mutation Catalog
+
+A mutation catalog is a Data Frame or Tibble containing two columns named mutation_type and count. The mutation_type column is a vector of unique strings each denoting a mutation type. It is possible to define custom mutation types, so long as they match the mutation types defined in a reference mutation signature table.
+
+```{r patient_mutation_catalog}
+source('mutation_signature_mcmc.R')
+
+patient_catalog <- read_tsv('example_catalog_1.tsv') %>%
+  rename(count = value) %>%
+  mutate(count = as.integer(count))
+```
+
+## Running MCMC Analysis and Exploring Posterior Distributions
+
+Once a mutation catalog is available, obtaining the contributions of each mutation signature (also known as the exposures) is straightforward. The following line of code initializes the Bayesian model which analyzes mutation signatures and stores the output into a list structure.
+
+By default, the analysis runs 4 chains in parallel, with 10 000 iterations per chain. However, for the purposes of this vignette, we will use only 2000 iterations per chain. This will help to lessen the runtime of this and later analyses for demonstration purposes.
+
+```{r patient_mcmc_run}
+patient_signature_exposures <- get_exposures(
+  mutation_catalog = patient_catalog,
+  n_chains = 4,
+  n_iter = 2000
+)
+```
+
+A few functions are available to explore the solutions obtained. The easiest way is to plot the posterior distributions for each mutation signature, as follows.
+
+```{r patient_mcmc_figures, fig.height = 2, fig.width = 8}
+patient_exposure_posterior_plot <- plot_exposure_posteriors(patient_signature_exposures)
+print(patient_exposure_posterior_plot)
+```
+
+Note that all exposure plotting functions automatically shorten signature names by removing the word "Signature". For comparison, we also provide a convenience function which computes a naive non-negative least squares (NNLS) best fit solution.
+
+```{r patient_mcmc_figures, fig.height = 2, fig.width = 8}
+patient_exposure_nnls_plot <- plot_nnls_solution(patient_signature_exposures)
+print(patient_exposure_nnls_plot)
+```
+
+***Write some observations here about the differences observed.***
+
+***Write functions which provide quantitative summary statistics about the exposures MCMC output***.
+
+# Density-based clustering of MCMC output
+
+To mitigate overfitting mutation signatures in an individual tumour scenario, it is important to consider good alternative solutions which may or may not differ from the ideal point estimate determined by NNLS. Consider the following scenario. A tumour has a high contribution from Signature 3. However, Signature 3 and Signature 8 share some similarities in their mutation profiles. While the ideal solution may have a high Signature 3 and low Signature 8, an alternative solution with high Signature 8 and low Signature 3 may be nearly as good a fit.
+
+In order to account for such solutions, we need to explore the density landscape of the 30-dimensional MCMC solution space for local optima. To do this, SignIT performs density-based clustering using the HDBSCAN algorithm. It then provides tools to explore the best-fit and highest-density regions within each solution cluster.
+
+HDBSCAN accepts a parameter named minPts, which stands for minimum points. The higher this parameter, the fewer clusters will form and the more outlier points there will be. While SignIT uses a default minPts of 40, this parameter can be adjusted depending on the needs of your specific dataset.
+
+The following command performs density clustering. Note that this step can place high demands on processor and memory resources, and may take a significant amount of time. For longer MCMC chains, it is recommended that this step is run on a high performance computing server.
+
+```{r density_based_clustering, fig.height = 8, fig.width = 8}
+patient_density_clustering <- density_clustering(patient_signature_exposures, minPts = 40)
+print(patient_density_clustering)
+```
+
+## Visualizing High-Dimensional Clusters with t-SNE
+
+It is always handy to be visualize the high dimensional solution space to try and understand the structure of data and verify the accuracy of density clustering. Because the MCMC solutions exist in 30-dimensional space, however, it is necessary to dimensionally reduce the solutions down to 2 dimensions for visualization. The t-SNE algorithm is especially well suited to such a task. The following function produces a visualization of the exposures MCMC chain along two projected t-SNE dimensions. Points are coloured according to the cluster they were assigned to by density clustering in 30-dimensional space.
+
+This visualization allows for verification that the data clusters along sensible borders and is not over-clustered or under-clustered.
+
+Please note that this figure can take a long time to generate.
+
+```{r patient_mcmc_tsne}
+plot_density_tsne(patient_signature_exposures, patient_density_clustering)
+```
+
+## Exploring Alternative Mutation Signature Solutions
+
+SignIT provides a number of ways to explore optimal solutions within density clusters. The following method locates the solution within each cluster which minimizes the residual sum of squares, and thus provides the "best fit" to the data. Solutions are visualized as line graphs to show related changes in different signatures.
+
+```{r density_clustering_best_fit_plot, fig.height = 2, fig.width = 8}
+best_fit_cluster_solutions_plot <- plot_cluster_solutions(patient_signature_exposures, patient_density_clustering, method = 'bestfit')
+print(best_fit_cluster_solutions_plot)
+```
+
+Alternatively, the following solution identifies the "most dense" point per cluster by computing the mean distance to k neighbouring points. The k-value can be set via a parameter, and defaults to 400.
+
+```{r density_clustering_max_densit_plot, fig.width = 8, fig.height = 2}
+most_dense_cluster_solutions_plot <- plot_cluster_solutions(patient_signature_exposures, patient_density_clustering, method = 'mostdense', k_value = 400)
+print(most_dense_cluster_solutions_plot)
+```
+
+To concisely examine the clusters resulting from density clustering, the following function plots a scatterplot showing the minimum residual sum of squares versus the cluster score for each cluster. Better solutions should aim to minimize RSS, but more stable clusters should have a higher cluster score. Ideal solutions should therefore be in the bottom-right of this plot.
+
+***Show naive NNLS solution as part of this plot***
+
+***Replace the points with text labels showing the cluster number?***
+
+```{r cluster_error_plot, fig.width = 5, fig.height = 4}
+cluster_error_plot <- plot_cluster_solution_errors(patient_signature_exposures, patient_density_clustering)
+print(cluster_error_plot)
+```
+
+For comparison's sake, here are the various plots of solutions from above in a single grid.
+
+```{r multiple_exposure_plots, fig.height = 8, fig.width = 8}
+plot_grid(
+  best_fit_cluster_solutions_plot + theme(legend.position = 'none') + labs(title = 'Solutions of each cluster (by lowest RSS)'),
+  most_dense_cluster_solutions_plot + theme(legend.position = 'none') + labs(title = 'Solutions of each cluster (by highest density region)'),
+  patient_exposure_nnls_plot + labs(title = 'Naive NNLS solution'),
+  patient_exposure_posterior_plot + labs(title = 'Posteriors of the complete MCMC solution'),
+  ncol = 1, align = 'v', 
+  labels = c('A', 'B', 'C', 'D')
+  )
+```
+
+## Examining Signature Bleed
+
+The previously described reciprocal interaction between Signature 3 and Signature 8 is referred to as "signature bleed". The similarity between these signatures results in instability of possible solutions. Bleed can be identified by an inverse correlation between the two signatures in the MCMC solution chain. The following method visualizes the projection of MCMC solutions onto the Signature 3 - Signature 8 plane.
+
+```{r signature_bleed_plot, fig.height = 5, fig.width = 6}
+plot_two_signature_hexplot(patient_signature_exposures, 'Signature 3', 'Signature 8', patient_density_clustering, trendline = FALSE)
+```
+
+By computing pairwise Spearman correlations for each signature pair, we can observe which signatures have anti-correlated exposure posterior distributions. The blue squares below indicate some degree of bleed between signatures.
+
+```{r signature_bleed_pairwise, fig.height = 5.5, fig.width = 7}
+plot_signature_pairwise_bleed(patient_signature_exposures)
+```
+
+***Create function to example signature bleed across the full structure of MCMC space, perhaps in a multivariate manner.***
+
+# SignIT on a Simulated Mutation Catalog
+
+In order to further illustrate the components of SignIT analysis, this next portion will simulate a catalog of somatic mutations.
+
+In this vignette, we will demonstrate using the 30 reference mutation signatures defined on the [COSMIC](http://cancer.sanger.ac.uk/cosmic/signatures) website. The corresponding matrix of mutation signature probabilities can be downloaded [here](http://cancer.sanger.ac.uk/cancergenome/assets/signatures_probabilities.txt). This dataset is built into SignIT and can be accessed via the get_reference_signatures method.
+
+```{r get_reference_signatures}
+reference_signatures <- get_reference_signatures()
+print(reference_signatures)
+```
+
+In order to simulate a mutation catalog, we need to multiply the reference signature matrix with a vector of signature exposures, which indicates the number of mutations contributed by each mutational process. For simplicity, we will simulate a catalog with only contributions from Signature 3.
+
+```{r mutation_simulation_setup}
+reference_signature_matrix <- reference_signatures_as_matrix(reference_signatures, mutation_catalog = reference_signatures)
+
+simulated_exposure <- c(
+  rep(0, 2),
+  1000,
+  rep(0, 27)
+)
+
+n_mutations <- sum(simulated_exposure)
+
+catalog_probability_vector <- reference_signature_matrix %*% simulated_exposure / n_mutations
+```
+
+To perform the actual simulation, we draw mutations from a multinomial distribution.
+
+```{r simulate_catalogs}
+simulated_catalog <- tibble(
+  mutation_type = reference_signatures[['mutation_type']],
+  count = rmultinom(
+    n = 1,
+    size = n_mutations,
+    prob = catalog_probability_vector
+    ) %>% as.numeric
+)
+
+# Randomize the order to simulated catalog to test that functions are robust to reordering
+simulated_catalog <- simulated_catalog[sample(1:dim(simulated_catalog)[1], replace = FALSE), ]
+print(simulated_catalog)
+```
+
+get_exposures will automatically account for the ordering of mutation types. Note that we randomized the order of our catalog rows to demonstrate this. Next, we compute signature exposures using SignIT.
+
+Again, we use 2000 iterations instead of the default 10 000 in order to minimize runtimes.
+
+```{r simulated_mutations_exposures}
+simulated_signature_exposures <- get_exposures(
+  mutation_catalog = simulated_catalog %>% mutate(count = as.integer(count)),
+  n_chains = 4,
+  n_iter = 2000
+)
+
+simulated_density_clustering <- density_clustering(simulated_signature_exposures, minPts = 40)
+```
+
+We proceed now to generate the plots demonstrated previously. Notice how even in this example with pure simulated Signature 3, the naive NNLS solution reports signature exposures arising from other mutation signatures. It is likely overfitting to the noise introduced by drawing from a multinomial random variable. The SignIT posteriors, however, provide a much more reasonable guess of the true exposure fractions, although they still do underestimate the exposure of Signature 3 (the true value was 1000). Note the slightly overestimated posteriors of other signatures including Signature 8, revealing some signature bleed.
+
+```{r simulated_exposure_mcmc_chains, fig.height = 8, fig.width = 8}
+simulated_best_fit_plot <- plot_cluster_solutions(simulated_signature_exposures, simulated_density_clustering, method = 'bestfit')
+simulated_most_densest_region_plot <- plot_cluster_solutions(simulated_signature_exposures, simulated_density_clustering, method = 'mostdense', k_value = 400)
+simulated_exposure_nnls_plot <- plot_nnls_solution(simulated_signature_exposures)
+simulated_exposure_posteriors <- plot_exposure_posteriors(simulated_signature_exposures, view = 'violin')
+
+plot_grid(
+  simulated_best_fit_plot + theme(legend.position = 'none') + labs(title = 'Solutions of each cluster (by lowest RSS)'),
+  simulated_most_densest_region_plot + theme(legend.position = 'none') + labs(title = 'Solutions of each cluster (by highest density region)'),
+  simulated_exposure_nnls_plot + labs(title = 'Naive NNLS solution'),
+  simulated_exposure_posteriors + labs(title = 'Posteriors of the complete MCMC solution'),
+  ncol = 1, align = 'v', 
+  labels = c('A', 'B', 'C', 'D')
+  )
+```
