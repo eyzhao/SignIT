@@ -7,6 +7,8 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, fig.path = 'figures/')
+
+library(cowplot)
 ```
 
 # SignIT: Mutation Signature Analysis in Individual Tumours with MCMC
@@ -26,11 +28,7 @@ This vignette demonstrates the use of SignIT to decipher mutation signatures in 
 A mutation catalog is a Data Frame or Tibble containing two columns named mutation_type and count. The mutation_type column is a vector of unique strings each denoting a mutation type. It is possible to define custom mutation types, so long as they match the mutation types defined in a reference mutation signature table.
 
 ```{r patient_mutation_catalog}
-source('mutation_signature_mcmc.R')
-
-patient_catalog <- read_tsv('example_catalog_1.tsv') %>%
-  rename(count = value) %>%
-  mutate(count = as.integer(count))
+data(example_catalog)
 ```
 
 ## Running MCMC Analysis and Exploring Posterior Distributions
@@ -41,22 +39,22 @@ By default, the analysis runs 4 chains in parallel, with 10 000 iterations per c
 
 ```{r patient_mcmc_run}
 patient_signature_exposures <- get_exposures(
-  mutation_catalog = patient_catalog,
+  mutation_catalog = example_catalog,
   n_chains = 4,
-  n_iter = 2000
+  n_iter = 10000
 )
 ```
 
 A few functions are available to explore the solutions obtained. The easiest way is to plot the posterior distributions for each mutation signature, as follows.
 
-```{r patient_mcmc_figures, fig.height = 2, fig.width = 8}
+```{r patient_mcmc_exposure_posterior_figure, fig.height = 2, fig.width = 8}
 patient_exposure_posterior_plot <- plot_exposure_posteriors(patient_signature_exposures)
 print(patient_exposure_posterior_plot)
 ```
 
 Note that all exposure plotting functions automatically shorten signature names by removing the word "Signature". For comparison, we also provide a convenience function which computes a naive non-negative least squares (NNLS) best fit solution.
 
-```{r patient_mcmc_figures, fig.height = 2, fig.width = 8}
+```{r patient_mcmc_nnls_solution_figure, fig.height = 2, fig.width = 8}
 patient_exposure_nnls_plot <- plot_nnls_solution(patient_signature_exposures)
 print(patient_exposure_nnls_plot)
 ```
@@ -86,11 +84,40 @@ It is always handy to be visualize the high dimensional solution space to try an
 
 This visualization allows for verification that the data clusters along sensible borders and is not over-clustered or under-clustered.
 
-Please note that this figure can take a long time to generate.
+Please note that this figure can take a long time to generate. We will generate three tsne graphs at different perplexities.
 
-```{r patient_mcmc_tsne}
-plot_density_tsne(patient_signature_exposures, patient_density_clustering)
+```{r patient_mcmc_tsne_perplexity_1}
+plot_density_tsne(patient_signature_exposures, patient_density_clustering, perplexity = 1)
 ```
+
+```{r patient_mcmc_tsne_perplexity_10}
+plot_density_tsne(patient_signature_exposures, patient_density_clustering, perplexity = 10)
+```
+
+```{r patient_mcmc_tsne_perplexity_50}
+plot_density_tsne(patient_signature_exposures, patient_density_clustering, perplexity = 50)
+```
+
+```{r patient_mcmc_tsne_perplexity_100}
+plot_density_tsne(patient_signature_exposures, patient_density_clustering, perplexity = 100)
+```
+
+```{r patient_mcmc_tsne_perplexity_200}
+plot_density_tsne(patient_signature_exposures, patient_density_clustering, perplexity = 200)
+```
+
+```{r patient_mcmc_tsne_perplexity_500}
+plot_density_tsne(patient_signature_exposures, patient_density_clustering, perplexity = 500)
+```
+
+```{r patient_mcmc_tsne_perplexity_1000}
+plot_density_tsne(patient_signature_exposures, patient_density_clustering, perplexity = 1000)
+```
+
+```{r patient_mcmc_tsne_perplexity_10000}
+plot_density_tsne(patient_signature_exposures, patient_density_clustering, perplexity = 10000)
+```
+
 
 ## Exploring Alternative Mutation Signature Solutions
 
@@ -200,7 +227,7 @@ Again, we use 2000 iterations instead of the default 10 000 in order to minimize
 simulated_signature_exposures <- get_exposures(
   mutation_catalog = simulated_catalog %>% mutate(count = as.integer(count)),
   n_chains = 4,
-  n_iter = 2000
+  n_iter = 10000
 )
 
 simulated_density_clustering <- density_clustering(simulated_signature_exposures, minPts = 40)

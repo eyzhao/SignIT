@@ -1,0 +1,11 @@
+library(devtools)
+library(roxygen2)
+library(knitr)
+library(tidyverse)
+library(rjags)
+library(purrr)
+library(nnls)
+library(dbscan)
+library(Rtsne)
+
+load_all('/projects/ezhao_prj/papers/SignIT-paper/analysis/scripts/SignIT')
