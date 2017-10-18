@@ -34,8 +34,11 @@ get_exposures <- function(mutation_catalog = NULL, file = NULL, reference_signat
       file, 
       col_types = cols(
         mutation_type = col_character(),
-        count = col_integer()
+        count = col_number()
       )
+    ) %>%
+    mutate(
+        count = as.integer(round(count))
     )
   }
   

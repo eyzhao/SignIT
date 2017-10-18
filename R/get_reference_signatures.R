@@ -28,9 +28,6 @@ get_reference_signatures <- function(signature_set = 'cosmic_30') {
   if (signature_set == 'cosmic_30') {  
     data('wtsi_30_snv_signatures') 
     wtsi_30_snv_signatures %>%
-      select_if(has_data) %>%
-      select(-`Substitution Type`, -Trinucleotide) %>%
-      rename(mutation_type = `Somatic Mutation Type`) %>%
       arrange(mutation_type)
   }
 }
