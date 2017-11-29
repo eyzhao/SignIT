@@ -20,17 +20,22 @@
 #' @import tibble
 #' @import tidyr
 
-run_signature_model <- function(signature_model, signature_names, n_mutations, n_iter=10000) {
+run_signature_model <- function(signature_model, n_iter=10000) {
   update(
     signature_model, 
     n.iter=n_iter
   )
-  
-  signature_samples = coda.samples(
-    signature_model, 
+
+  signature_samples <- signature_model %>% coda.samples(
     variable.names=c("exposures"),
     n.iter=n_iter
-  ) %>%
+  )
+
+  return(signature_samples)
+}
+
+extract_exposure_chain <- function(signature_model, signature_names, n_mutations) {
+  signature_samples <- signature_model %>%
     lapply(function(chain) {
       chain %>%
         as_tibble %>%

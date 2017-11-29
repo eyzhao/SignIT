@@ -26,8 +26,11 @@ get_signature_model <- function(mutation_catalog, reference_signatures = NULL, n
   
   reference_signature_matrix <-  reference_signatures_as_matrix(reference_signatures, mutation_catalog)
   
+  print(reference_signature_matrix)
+  print(mutation_catalog[['count']])
   naive_nnls_solution <- nnls(reference_signature_matrix, mutation_catalog[['count']])$x
   naive_nnls_solution <- if_else(naive_nnls_solution == 0, 1, naive_nnls_solution) %>% ceiling()
+  print(naive_nnls_solution)
 
   n_mutations <- sum(mutation_catalog[['count']])
   
@@ -38,7 +41,7 @@ get_signature_model <- function(mutation_catalog, reference_signatures = NULL, n
     n_mutations = n_mutations
   )
   signature_init = list(
-    exposures = naive_nnls_solution
+    exposures = naive_nnls_solution / sum(naive_nnls_solution)
   )
   
   signature_model = '
