@@ -1,0 +1,156 @@
+---
+title: "SignIT Vignette"
+author: "Eric Zhao"
+date: "September 20, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.path = 'figures/')
+
+library(tidyverse)
+library(cowplot)
+library(rmutil)
+library(rstan)
+library(devtools)
+
+load_all('..')
+```
+
+```{r load_data}
+mutations_raw <- read_tsv('stan_data.tsv')
+
+mutations <- mutations_raw %>%
+  mutate(
+    f_m = (alt_depth * (tumour_content * tumour_copy + (1 - tumour_content) * normal_copy)) / (total_depth * tumour_content)
+  )
+
+print(mutations)
+```
+
+```{r exploratory_plot}
+mutations %>%
+  ggplot(aes(
+    x = f_m
+  )) +
+  geom_histogram()
+```
+
+```{r simulate_data}
+f_m_true = c(0.44986, 0.96522)
+clone_prop = c(0.35836, 0.64164)
+dispersion = 1/0.01582
+
+rcat <- function(n, p) {
+  apply(rmultinom(n, 1, p), 2, function(z) {which(z == 1)})
+}
+
+z = rcat(dim(mutations)[1], clone_prop)
+f_m = sapply(z, function(i) {f_m_true[i]})
+a = with(mutations, tumour_content / (tumour_content * tumour_copy + (1 - tumour_content) * normal_copy))
+binom_prob = f_m * a
+
+x = sapply(1:dim(mutations)[1], function(n) {
+  rbetabinom(n = 1, size = mutations$total_depth[n], m = binom_prob[n], s = 600)
+})
+
+simulated_var_reads <- tibble(simulated_var = x/ mutations$total_depth) %>%
+  ggplot(aes(
+    x = simulated_var
+  )) +
+  geom_histogram()
+
+actual_var_reads <- mutations %>%
+  ggplot(aes(
+    x = alt_depth / total_depth
+  )) +
+  geom_histogram()
+
+plot_grid(
+  simulated_var_reads,
+  actual_var_reads,
+  nrow = 1, labels = c('Sim', 'Actual')
+)
+```
+
+
+```{r simulate_data, fig.width = 10, fig.height = 5}
+dispersion = 1/0.01582
+
+reference_signatures <- get_reference_signatures()
+signature_names <- reference_signatures %>% select(-mutation_type) %>% colnames
+S <- reference_signatures %>% select(-mutation_type) %>% as.matrix
+mutation_types <- reference_signatures$mutation_type
+
+f_m = c(0.2, 0.96522) # True values of f * m for each subpopulation
+
+phi_exposures = tibble(
+  population_1 = c(0.1, 0.8, rep(0, 10), 0.1, rep(0, 17)),
+  population_2 = c(0.1, 0.1, 0.8, rep(0, 26), 0)
+)
+
+clone_prop = c(0.3, 0.7)
+
+phi <- t(t(phi_exposures) * clone_prop) %>%
+  as_tibble %>%
+  mutate(signature = factor(signature_names, levels = signature_names)) %>%
+  gather(population, probability, -signature) %>%
+  mutate(population = factor(population))
+
+N = 10000 # Number of mutations
+
+latent = rcat(N, phi$probability)
+
+z <- phi[latent, ][['signature']]  # Latent Signature
+u <- phi[latent, ][['population']] # Latent Population
+
+f_m_simulated = sapply(u %>% as.numeric, function(population_index) {
+  f_m[population_index]
+})
+
+tumour_content = 0.75
+tumour_copy = 2
+normal_copy = 2
+
+a = tumour_content / (tumour_content * tumour_copy + (1 - tumour_content) * normal_copy)
+binom_prob = f_m_simulated * a
+
+# VAF simulation
+v = sapply(1:N, function(n) {
+  rbetabinom(n = 1, size = 200, m = binom_prob[n], s = dispersion)
+})
+
+# Mutation Class Simulation
+x = sapply(z %>% as.numeric, function(signature_index) {
+  sig_probability_vector = S[, signature_index]
+  rcat(1, sig_probability_vector)
+})
+
+# Plots
+mutations <- tibble(
+  mutation_type = reference_signatures[x, ][['mutation_type']],
+  vaf = v
+) %>%
+  mutate(
+    context = gsub('(.)\\[.>.\\](.)', '\\1\\2', mutation_type),
+    transition = gsub('.\\[(.>.)\\].', '\\1', mutation_type)
+  )
+
+mutations %>%
+  filter(vaf > 50) %>%
+  ggplot(aes(
+    x = context
+  )) +
+  geom_bar() +
+  facet_grid(. ~ transition) +
+  theme(
+    axis.text.x = element_text(angle = 90, size = 6)
+  )
+
+mutations %>%
+  ggplot(aes(
+    x = vaf
+  )) +
+  geom_histogram()
+```
+
