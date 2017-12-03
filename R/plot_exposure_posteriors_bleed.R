@@ -35,7 +35,10 @@ plot_exposure_posteriors_bleed <- function(exposures_mcmc_output, view='violin',
         scale_y_continuous(limits = c(-15, 0), expand = c(-0.005, 0)) +
         scale_x_discrete(labels = e$signature_names)
      
-    posterior_plot <- plot_exposure_posteriors(exposures_mcmc_output, view=view)
+    posterior_plot <- plot_exposure_posteriors(exposures_mcmc_output, view=view) +
+        theme(
+            axis.title.x = element_blank()
+        )
 
     final_plot <- plot_grid(
         posterior_plot,
