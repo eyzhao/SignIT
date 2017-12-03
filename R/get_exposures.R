@@ -2,7 +2,7 @@
 #'
 #' At the heart of SignIT is the MCMC sampling of signature exposure solutions.
 #' This function provides a convenient wrapper around the MCMC sampling steps.
-#' It constructs the JAGS model, runs it, and then returns the result in a well formatted list.
+#' It constructs the STAN model, runs it, and then returns the result in a well formatted list.
 #'
 #' @param mutation_catalog      Data frame with columns mutation_type, count. The mutation types
 #'                              must be equivalent to those in reference_signatures.
@@ -26,64 +26,9 @@
 #'
 #' @export
 
-get_exposures <- function(mutation_catalog = NULL, file = NULL, reference_signatures = NULL, n_chains = 4, n_iter = 10000, n_adapt = 10000) {
-  if (is.null(mutation_catalog) && is_null(file)) {
-    stop('Must either provide mutation_catalog as data frame or path to TSV file')
-  } else if (is.null(mutation_catalog)) {
-    mutation_catalog <- read_tsv(
-      file, 
-      col_types = cols(
-        mutation_type = col_character(),
-        count = col_number()
-      )
-    ) %>%
-    mutate(
-        count = as.integer(round(count))
-    )
-  }
-  
-  if (! 'mutation_type' %in% names(mutation_catalog) || ! 'count' %in% names(mutation_catalog)) {
-    stop('Mutation catalog is not properly formatted. Must have two columns: mutation_type (character) and count (integer)')
-  }
-  
-  if (is.null(reference_signatures)) {
-    reference_signatures <- get_reference_signatures()
-  }
-
-  signature_model <- get_signature_model(
-    mutation_catalog, 
-    reference_signatures = reference_signatures,
-    n_chains = n_chains,
-    n_adapt = n_adapt
-  )
-  
-  signature_names <- get_signature_names(reference_signatures)
-  n_mutations <- mutation_catalog[['count']] %>% sum
-  
-  signature_model_updated <- run_signature_model(
-    signature_model, 
-    n_iter = n_iter
-  )
-
-  signature_exposures <- signature_model_updated %>% extract_exposure_chain(
-    signature_names = signature_names, 
-    n_mutations = n_mutations
-  )
-  
-  return(list(
-    sampling_tool = 'jags',
-    mutation_catalog = mutation_catalog,
-    exposure_chain = signature_exposures %>% mutate(signature = factor(signature, levels = signature_names)),
-    reference_signatures = reference_signatures,
-    signature_names = signature_names,
-    n_mutations = n_mutations,
-    model = signature_model_updated
-  ))
-}
-
-get_stan_exposures <- function(mutation_catalog = NULL, file = NULL, reference_signatures = NULL, n_chains = 4, n_iter = 200, n_adapt = 200, n_cores = 1, stan_model = NULL) {
+get_exposures <- function(mutation_catalog = NULL, file = NULL, reference_signatures = NULL, n_chains = 4, n_iter = 200, n_adapt = 200, n_cores = 1, stan_model = NULL) {
     if (is.null(stan_model)) {
-        stan_model <- get_stan_model()
+        stan_model <- get_signature_model()
     }
 
     if (is.null(mutation_catalog) && is_null(file)) {
@@ -168,33 +113,3 @@ get_stan_exposures <- function(mutation_catalog = NULL, file = NULL, reference_s
   ))
 }
 
-get_stan_model <- function() {
-
-    stan_model_string_vectorized <- '
-        data {
-          int<lower=1> S; // number of signatures
-          int<lower=1> N; // number of mutations
-          int<lower=1> R; // number of mutation types (vocabulary size)
-          int<lower=0> v[R]; // mutation catalog vector
-          matrix[R, S] ref_signatures; // reference mutation signatures (theta)
-        }
-        parameters {
-          simplex[S] exposures; // mixing proportions
-        }
-        transformed parameters {
-          vector[R] sim_catalog;
-          simplex[R] sim_catalog_prob;
-          sim_catalog = ref_signatures * exposures * N;
-          sim_catalog_prob = sim_catalog / sum(sim_catalog);
-        }
-        model {
-          v ~ multinomial(sim_catalog_prob);
-          exposures ~ dirichlet(rep_vector(1, S));
-        }
-    '
-
-    message('Establishing Stan model')
-
-    stan_dso = stan_model(model_code = stan_model_string_vectorized)
-
-}

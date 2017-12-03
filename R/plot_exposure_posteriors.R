@@ -23,12 +23,13 @@ plot_exposure_posteriors <- function(exposures_mcmc_output, view = 'violin') {
     labs(x = 'Signature', y = 'Exposure') +
     rotate_x_axis_labels()
     
-  
   if (view == 'boxplot') {
-    return(plot + geom_boxplot())
+    plot <- plot + geom_boxplot()
   } else {
-    return(plot + geom_violin())
+    plot <- plot + geom_violin()
   }
+
+  return(plot)
 }
 
 
