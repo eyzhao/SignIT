@@ -32,12 +32,18 @@ get_exposure_summary_table <- function(exposures_mcmc_output, alpha = c(0, 0.05,
     quantile_breaks = c((alpha/2), 1-(alpha/2)) %>% sort
 
     if (fraction) {
-        exposures_mcmc_output$exposure_chain$exposure <- exposures_mcmc_output$exposure_chain$exposure / exposures_mcmc_output$n_mutations
+        if (exposures_mcmc_output$n_mutations > 0) {
+            exposures_mcmc_output$exposure_chain$exposure <- exposures_mcmc_output$exposure_chain$exposure / exposures_mcmc_output$n_mutations
+        }
     }
 
     get_mode <- function(v) {
-        d <- density(v)
-        d$x[d$y == max(d$y)]
+        if (all(length(unique(v)) == 1)) {
+            return(unique(v))
+        } else {
+            d <- density(v)
+            d$x[d$y == max(d$y)] %>% .[ceiling(length(.) / 2)]
+        }
     }
 
     centre_table <- exposures_mcmc_output$exposure_chain %>%

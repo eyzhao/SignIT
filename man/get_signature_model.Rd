@@ -2,26 +2,13 @@
 % Please edit documentation in R/get_signature_model.R
 \name{get_signature_model}
 \alias{get_signature_model}
-\title{Get the JAGS Model for Mutation Signature Analysis}
+\title{Get the STAN Model for Mutation Signature Analysis}
 \usage{
-get_signature_model(mutation_catalog, reference_signatures = NULL,
-  n_chains = 4, n_adapt = 10000)
-}
-\arguments{
-\item{mutation_catalog}{Data frame with columns mutation_type and count.}
-
-\item{reference_signatures}{Reference signature data with mutation_type column and
-one named column per signature. Can be obtained from
-get_reference_signatures().}
-
-\item{n_chains}{The number of chains to run MCMC analysis with.}
-
-\item{n_adapt}{The number of burn-in iterations to run per chain.}
+get_signature_model()
 }
 \value{
-JAGS model object with initialized values, ready to sample from
+STAN model object
 }
 \description{
-Creates the JAGS model for MCMC analysis of mutation signatures.
-An NNLS solution is used as the initial guess.
+Creates the STAN model for MCMC analysis of mutation signatures.
 }

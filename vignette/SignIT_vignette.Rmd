@@ -6,8 +6,15 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, fig.path = 'figures/')
+knitr::opts_chunk$set(echo = TRUE, fig.path = 'figures/', dev = c('png'), dpi = 300)
 
+library(devtools)
+load_all('/projects/ezhao_prj/papers/SignIT-paper/analysis/scripts/SignIT')
+library(nnls)
+library(dbscan)
+library(tidyverse)
+library(rstan)
+library(Rtsne)
 library(cowplot)
 ```
 
@@ -40,8 +47,6 @@ By default, the analysis runs 4 chains in parallel, with 10 000 iterations per c
 ```{r patient_mcmc_run}
 patient_signature_exposures <- get_exposures(
   mutation_catalog = example_catalog,
-  n_chains = 4,
-  n_iter = 10000
 )
 ```
 
@@ -86,36 +91,8 @@ This visualization allows for verification that the data clusters along sensible
 
 Please note that this figure can take a long time to generate. We will generate three tsne graphs at different perplexities.
 
-```{r patient_mcmc_tsne_perplexity_1}
-plot_density_tsne(patient_signature_exposures, patient_density_clustering, perplexity = 1)
-```
-
 ```{r patient_mcmc_tsne_perplexity_10}
 plot_density_tsne(patient_signature_exposures, patient_density_clustering, perplexity = 10)
-```
-
-```{r patient_mcmc_tsne_perplexity_50}
-plot_density_tsne(patient_signature_exposures, patient_density_clustering, perplexity = 50)
-```
-
-```{r patient_mcmc_tsne_perplexity_100}
-plot_density_tsne(patient_signature_exposures, patient_density_clustering, perplexity = 100)
-```
-
-```{r patient_mcmc_tsne_perplexity_200}
-plot_density_tsne(patient_signature_exposures, patient_density_clustering, perplexity = 200)
-```
-
-```{r patient_mcmc_tsne_perplexity_500}
-plot_density_tsne(patient_signature_exposures, patient_density_clustering, perplexity = 500)
-```
-
-```{r patient_mcmc_tsne_perplexity_1000}
-plot_density_tsne(patient_signature_exposures, patient_density_clustering, perplexity = 1000)
-```
-
-```{r patient_mcmc_tsne_perplexity_10000}
-plot_density_tsne(patient_signature_exposures, patient_density_clustering, perplexity = 10000)
 ```
 
 

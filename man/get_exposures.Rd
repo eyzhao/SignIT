@@ -5,8 +5,8 @@
 \title{Compute the MCMC sample space of exposure vectors}
 \usage{
 get_exposures(mutation_catalog = NULL, file = NULL,
-  reference_signatures = NULL, n_chains = 4, n_iter = 10000,
-  n_adapt = 10000)
+  reference_signatures = NULL, n_chains = 4, n_iter = 200,
+  n_adapt = 200, n_cores = 1, stan_model = NULL)
 }
 \arguments{
 \item{mutation_catalog}{Data frame with columns mutation_type, count. The mutation types
@@ -30,5 +30,5 @@ List containing the MCMC samples, as well as other data such as reference signat
 \description{
 At the heart of SignIT is the MCMC sampling of signature exposure solutions.
 This function provides a convenient wrapper around the MCMC sampling steps.
-It constructs the JAGS model, runs it, and then returns the result in a well formatted list.
+It constructs the STAN model, runs it, and then returns the result in a well formatted list.
 }

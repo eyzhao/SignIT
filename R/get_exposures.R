@@ -62,45 +62,60 @@ get_exposures <- function(mutation_catalog = NULL, file = NULL, reference_signat
         replace_na(list(count_ = 0)) %>%
         select(mutation_type, count = count_)
 
-    stan_data = list(
-        N = sum(mutation_catalog$count),
-        S = reference_signatures %>% select(-mutation_type) %>% dim %>% .[2],
-        R = reference_signatures %>% dim %>% .[1],
-        v = mutation_catalog$count,
-        ref_signatures = reference_signatures %>% select(-mutation_type) %>% as.matrix
-    )
-
-    message('Sampling')
-
-    stan_object <- sampling(
-        object = stan_model,
-        data = stan_data,
-        chains = n_chains,
-        iter = n_iter + n_adapt,
-        warmup = n_adapt,
-        cores = n_cores,
-        control = list(
-        )
-    )
-
     signature_names <- reference_signatures %>% select(-mutation_type) %>% colnames
     n_mutations <- sum(mutation_catalog$count)
 
-    fit <- stan_object %>% as.array
-    exposure_chain <- fit[, , grepl('exposure', dimnames(fit)$parameters)] %>% 
-        plyr::adply(2, function(z) { as_tibble(z) }) %>% 
-        mutate(
-            iteration = row_number(), 
-            chain = factor(chains) %>% as.integer
-        ) %>% 
-        select(-chains) %>% 
-        `colnames<-`(c(signature_names, 'iteration', 'chain')) %>% 
-        gather(signature, exposure, -iteration, -chain) %>% 
-        as_tibble %>%
-        mutate(
-            signature = factor(signature, levels = signature_names),
-            exposure = exposure * n_mutations
+    if (n_mutations > 0) {
+        stan_data = list(
+            N = sum(mutation_catalog$count),
+            S = reference_signatures %>% select(-mutation_type) %>% dim %>% .[2],
+            R = reference_signatures %>% dim %>% .[1],
+            v = mutation_catalog$count,
+            ref_signatures = reference_signatures %>% select(-mutation_type) %>% as.matrix
         )
+
+        message('Sampling')
+
+        stan_object <- sampling(
+            object = stan_model,
+            data = stan_data,
+            chains = n_chains,
+            iter = n_iter + n_adapt,
+            warmup = n_adapt,
+            cores = n_cores,
+            control = list(
+            )
+        )
+
+        fit <- stan_object %>% as.array
+        exposure_chain <- fit[, , grepl('exposure', dimnames(fit)$parameters)] %>% 
+            plyr::adply(2, function(z) { as_tibble(z) }) %>% 
+            mutate(
+                iteration = row_number(), 
+                chain = factor(chains) %>% as.integer
+            ) %>% 
+            select(-chains) %>% 
+            `colnames<-`(c(signature_names, 'iteration', 'chain')) %>% 
+            gather(signature, exposure, -iteration, -chain) %>% 
+            as_tibble %>%
+            mutate(
+                signature = factor(signature, levels = signature_names),
+                exposure = exposure * n_mutations
+            )
+    } else {
+        warning('Your dataset contained zero mutations. Returning zero exposure vector.')
+        exposure_chain <- crossing(
+            chain = 1:n_chains,
+            iteration = 1:n_iter,
+            signature = signature_names,
+            exposure = 0
+        ) %>%
+        mutate(
+            signature = factor(signature, levels = signature_names)
+        )
+
+        stan_object <- NULL
+    }
  
   return(list(
     sampling_tool = 'stan',

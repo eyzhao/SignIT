@@ -4,11 +4,12 @@
 \alias{run_signature_model}
 \title{Run the JAGS model to decipher mutation signatures by MCMC}
 \usage{
-run_signature_model(signature_model, signature_names, n_mutations,
-  n_iter = 10000)
+run_signature_model(signature_model, n_iter = 10000)
 }
 \arguments{
 \item{signature_model}{The JAGS model obtained from get_signature_model}
+
+\item{n_iter}{The number of iterations to run per chain.}
 
 \item{signature_names}{Signature names provided as a character vector. Must match
 the number of signatures provided to the model.}
@@ -16,8 +17,6 @@ the number of signatures provided to the model.}
 \item{n_mutations}{The number of somatic mutations. This is multiplied by the
 fractional exposure vector to obtain the absolute number of mutations
 associated with each mutation type.}
-
-\item{n_iter}{The number of iterations to run per chain.}
 }
 \value{
 Data frame with one row per signature per iteration of the chain.

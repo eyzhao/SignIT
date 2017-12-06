@@ -36,23 +36,22 @@ By default, the analysis runs 4 chains in parallel, with 10 000 iterations per c
 
 
 ```r
-patient_signature_exposures <- get_exposures(
+stan_model <- get_stan_model()
+```
+
+```
+## Error in get_stan_model(): could not find function "get_stan_model"
+```
+
+```r
+patient_signature_exposures <- get_stan_exposures(
   mutation_catalog = example_catalog,
-  n_chains = 4,
-  n_iter = 10000
+  stan_model = stan_model
 )
 ```
 
 ```
-## Compiling model graph
-##    Resolving undeclared variables
-##    Allocating nodes
-## Graph information:
-##    Observed stochastic nodes: 1
-##    Unobserved stochastic nodes: 1
-##    Total graph size: 2917
-## 
-## Initializing model
+## Error in get_stan_exposures(mutation_catalog = example_catalog, stan_model = stan_model): could not find function "get_stan_exposures"
 ```
 
 A few functions are available to explore the solutions obtained. The easiest way is to plot the posterior distributions for each mutation signature, as follows.
@@ -60,20 +59,38 @@ A few functions are available to explore the solutions obtained. The easiest way
 
 ```r
 patient_exposure_posterior_plot <- plot_exposure_posteriors(patient_signature_exposures)
+```
+
+```
+## Error in eval(lhs, parent, parent): object 'patient_signature_exposures' not found
+```
+
+```r
 print(patient_exposure_posterior_plot)
 ```
 
-![plot of chunk patient_mcmc_exposure_posterior_figure](figures/patient_mcmc_exposure_posterior_figure-1.png)
+```
+## Error in print(patient_exposure_posterior_plot): object 'patient_exposure_posterior_plot' not found
+```
 
 Note that all exposure plotting functions automatically shorten signature names by removing the word "Signature". For comparison, we also provide a convenience function which computes a naive non-negative least squares (NNLS) best fit solution.
 
 
 ```r
 patient_exposure_nnls_plot <- plot_nnls_solution(patient_signature_exposures)
+```
+
+```
+## Error in nnls(exposures_mcmc_output$reference_signatures %>% select(-mutation_type) %>% : could not find function "nnls"
+```
+
+```r
 print(patient_exposure_nnls_plot)
 ```
 
-![plot of chunk patient_mcmc_nnls_solution_figure](figures/patient_mcmc_nnls_solution_figure-1.png)
+```
+## Error in print(patient_exposure_nnls_plot): object 'patient_exposure_nnls_plot' not found
+```
 
 ***Write some observations here about the differences observed.***
 
@@ -92,19 +109,18 @@ The following command performs density clustering. Note that this step can place
 
 ```r
 patient_density_clustering <- density_clustering(patient_signature_exposures, minPts = 40)
+```
+
+```
+## Error in eval(lhs, parent, parent): object 'patient_signature_exposures' not found
+```
+
+```r
 print(patient_density_clustering)
 ```
 
 ```
-## HDBSCAN clustering for 40000 objects.
-## Parameters: minPts = 40
-## The clustering contains 3 cluster(s) and 2792 noise points.
-## 
-##     0     1     2     3 
-##  2792    41    70 37097 
-## 
-## Available fields: cluster, minPts, cluster_scores,
-##                   membership_prob, outlier_scores, hc
+## Error in print(patient_density_clustering): object 'patient_density_clustering' not found
 ```
 
 ## Visualizing High-Dimensional Clusters with t-SNE
@@ -120,49 +136,63 @@ Please note that this figure can take a long time to generate. We will generate 
 plot_density_tsne(patient_signature_exposures, patient_density_clustering, perplexity = 1)
 ```
 
-![plot of chunk patient_mcmc_tsne_perplexity_1](figures/patient_mcmc_tsne_perplexity_1-1.png)
+```
+## Error in eval(lhs, parent, parent): object 'patient_signature_exposures' not found
+```
 
 
 ```r
 plot_density_tsne(patient_signature_exposures, patient_density_clustering, perplexity = 10)
 ```
 
-![plot of chunk patient_mcmc_tsne_perplexity_10](figures/patient_mcmc_tsne_perplexity_10-1.png)
+```
+## Error in eval(lhs, parent, parent): object 'patient_signature_exposures' not found
+```
 
 
 ```r
 plot_density_tsne(patient_signature_exposures, patient_density_clustering, perplexity = 50)
 ```
 
-![plot of chunk patient_mcmc_tsne_perplexity_50](figures/patient_mcmc_tsne_perplexity_50-1.png)
+```
+## Error in eval(lhs, parent, parent): object 'patient_signature_exposures' not found
+```
 
 
 ```r
 plot_density_tsne(patient_signature_exposures, patient_density_clustering, perplexity = 100)
 ```
 
-![plot of chunk patient_mcmc_tsne_perplexity_100](figures/patient_mcmc_tsne_perplexity_100-1.png)
+```
+## Error in eval(lhs, parent, parent): object 'patient_signature_exposures' not found
+```
 
 
 ```r
 plot_density_tsne(patient_signature_exposures, patient_density_clustering, perplexity = 200)
 ```
 
-![plot of chunk patient_mcmc_tsne_perplexity_200](figures/patient_mcmc_tsne_perplexity_200-1.png)
+```
+## Error in eval(lhs, parent, parent): object 'patient_signature_exposures' not found
+```
 
 
 ```r
 plot_density_tsne(patient_signature_exposures, patient_density_clustering, perplexity = 500)
 ```
 
-![plot of chunk patient_mcmc_tsne_perplexity_500](figures/patient_mcmc_tsne_perplexity_500-1.png)
+```
+## Error in eval(lhs, parent, parent): object 'patient_signature_exposures' not found
+```
 
 
 ```r
 plot_density_tsne(patient_signature_exposures, patient_density_clustering, perplexity = 1000)
 ```
 
-![plot of chunk patient_mcmc_tsne_perplexity_1000](figures/patient_mcmc_tsne_perplexity_1000-1.png)
+```
+## Error in eval(lhs, parent, parent): object 'patient_signature_exposures' not found
+```
 
 
 ```r
@@ -170,7 +200,7 @@ plot_density_tsne(patient_signature_exposures, patient_density_clustering, perpl
 ```
 
 ```
-## Error in Rtsne.default(., perplexity = perplexity, max_iter = 5000): Perplexity is too large.
+## Error in eval(lhs, parent, parent): object 'patient_signature_exposures' not found
 ```
 
 
@@ -181,20 +211,38 @@ SignIT provides a number of ways to explore optimal solutions within density clu
 
 ```r
 best_fit_cluster_solutions_plot <- plot_cluster_solutions(patient_signature_exposures, patient_density_clustering, method = 'bestfit')
+```
+
+```
+## Error in eval(lhs, parent, parent): object 'patient_signature_exposures' not found
+```
+
+```r
 print(best_fit_cluster_solutions_plot)
 ```
 
-![plot of chunk density_clustering_best_fit_plot](figures/density_clustering_best_fit_plot-1.png)
+```
+## Error in print(best_fit_cluster_solutions_plot): object 'best_fit_cluster_solutions_plot' not found
+```
 
 Alternatively, the following solution identifies the "most dense" point per cluster by computing the mean distance to k neighbouring points. The k-value can be set via a parameter, and defaults to 400.
 
 
 ```r
 most_dense_cluster_solutions_plot <- plot_cluster_solutions(patient_signature_exposures, patient_density_clustering, method = 'mostdense', k_value = 400)
+```
+
+```
+## Error in eval(lhs, parent, parent): object 'patient_signature_exposures' not found
+```
+
+```r
 print(most_dense_cluster_solutions_plot)
 ```
 
-![plot of chunk density_clustering_max_densit_plot](figures/density_clustering_max_densit_plot-1.png)
+```
+## Error in print(most_dense_cluster_solutions_plot): object 'most_dense_cluster_solutions_plot' not found
+```
 
 To concisely examine the clusters resulting from density clustering, the following function plots a scatterplot showing the minimum residual sum of squares versus the cluster score for each cluster. Better solutions should aim to minimize RSS, but more stable clusters should have a higher cluster score. Ideal solutions should therefore be in the bottom-right of this plot.
 
@@ -208,7 +256,7 @@ cluster_error_plot <- plot_cluster_solution_errors(patient_signature_exposures, 
 ```
 
 ```
-## Error in mutate_impl(.data, dots): Evaluation error: could not find function "get_nnls_rss".
+## Error in eval(lhs, parent, parent): object 'patient_density_clustering' not found
 ```
 
 ```r
@@ -233,7 +281,9 @@ plot_grid(
   )
 ```
 
-![plot of chunk multiple_exposure_plots](figures/multiple_exposure_plots-1.png)
+```
+## Error in plot_grid(best_fit_cluster_solutions_plot + theme(legend.position = "none") + : object 'best_fit_cluster_solutions_plot' not found
+```
 
 ## Examining Signature Bleed
 
@@ -245,10 +295,8 @@ plot_two_signature_hexplot(patient_signature_exposures, 'Signature 3', 'Signatur
 ```
 
 ```
-## Loading required package: methods
+## Error in eval(lhs, parent, parent): object 'patient_signature_exposures' not found
 ```
-
-![plot of chunk signature_bleed_plot](figures/signature_bleed_plot-1.png)
 
 By computing pairwise Spearman correlations for each signature pair, we can observe which signatures have anti-correlated exposure posterior distributions. The blue squares below indicate some degree of bleed between signatures.
 
@@ -257,7 +305,9 @@ By computing pairwise Spearman correlations for each signature pair, we can obse
 plot_signature_pairwise_bleed(patient_signature_exposures)
 ```
 
-![plot of chunk signature_bleed_pairwise](figures/signature_bleed_pairwise-1.png)
+```
+## Error in eval(lhs, parent, parent): object 'patient_signature_exposures' not found
+```
 
 ***Create function to example signature bleed across the full structure of MCMC space, perhaps in a multivariate manner.***
 
@@ -338,16 +388,16 @@ print(simulated_catalog)
 ## # A tibble: 96 x 2
 ##    mutation_type count
 ##            <chr> <dbl>
-##  1       A[C>G]T    18
-##  2       G[T>G]A     3
-##  3       T[T>C]A     7
-##  4       G[C>G]C    14
-##  5       C[C>T]G     3
-##  6       A[T>A]G     6
-##  7       T[T>C]T    13
-##  8       A[C>G]G     7
-##  9       A[C>T]A    13
-## 10       A[T>G]A     2
+##  1       C[T>A]A     9
+##  2       C[C>A]T    13
+##  3       T[T>A]G     7
+##  4       A[T>G]A     2
+##  5       A[T>A]C     6
+##  6       C[C>G]A    18
+##  7       C[T>G]C     5
+##  8       A[C>T]G     9
+##  9       T[T>C]T     6
+## 10       T[C>G]C    24
 ## # ... with 86 more rows
 ```
 
@@ -357,7 +407,7 @@ Again, we use 2000 iterations instead of the default 10 000 in order to minimize
 
 
 ```r
-simulated_signature_exposures <- get_exposures(
+simulated_signature_exposures <- get_stan_exposures(
   mutation_catalog = simulated_catalog %>% mutate(count = as.integer(count)),
   n_chains = 4,
   n_iter = 10000
@@ -365,19 +415,15 @@ simulated_signature_exposures <- get_exposures(
 ```
 
 ```
-## Compiling model graph
-##    Resolving undeclared variables
-##    Allocating nodes
-## Graph information:
-##    Observed stochastic nodes: 1
-##    Unobserved stochastic nodes: 1
-##    Total graph size: 2917
-## 
-## Initializing model
+## Error in get_stan_exposures(mutation_catalog = simulated_catalog %>% mutate(count = as.integer(count)), : could not find function "get_stan_exposures"
 ```
 
 ```r
 simulated_density_clustering <- density_clustering(simulated_signature_exposures, minPts = 40)
+```
+
+```
+## Error in eval(lhs, parent, parent): object 'simulated_signature_exposures' not found
 ```
 
 We proceed now to generate the plots demonstrated previously. Notice how even in this example with pure simulated Signature 3, the naive NNLS solution reports signature exposures arising from other mutation signatures. It is likely overfitting to the noise introduced by drawing from a multinomial random variable. The SignIT posteriors, however, provide a much more reasonable guess of the true exposure fractions, although they still do underestimate the exposure of Signature 3 (the true value was 1000). Note the slightly overestimated posteriors of other signatures including Signature 8, revealing some signature bleed.
@@ -385,10 +431,37 @@ We proceed now to generate the plots demonstrated previously. Notice how even in
 
 ```r
 simulated_best_fit_plot <- plot_cluster_solutions(simulated_signature_exposures, simulated_density_clustering, method = 'bestfit')
-simulated_most_densest_region_plot <- plot_cluster_solutions(simulated_signature_exposures, simulated_density_clustering, method = 'mostdense', k_value = 400)
-simulated_exposure_nnls_plot <- plot_nnls_solution(simulated_signature_exposures)
-simulated_exposure_posteriors <- plot_exposure_posteriors(simulated_signature_exposures, view = 'violin')
+```
 
+```
+## Error in eval(lhs, parent, parent): object 'simulated_signature_exposures' not found
+```
+
+```r
+simulated_most_densest_region_plot <- plot_cluster_solutions(simulated_signature_exposures, simulated_density_clustering, method = 'mostdense', k_value = 400)
+```
+
+```
+## Error in eval(lhs, parent, parent): object 'simulated_signature_exposures' not found
+```
+
+```r
+simulated_exposure_nnls_plot <- plot_nnls_solution(simulated_signature_exposures)
+```
+
+```
+## Error in nnls(exposures_mcmc_output$reference_signatures %>% select(-mutation_type) %>% : could not find function "nnls"
+```
+
+```r
+simulated_exposure_posteriors <- plot_exposure_posteriors(simulated_signature_exposures, view = 'violin')
+```
+
+```
+## Error in eval(lhs, parent, parent): object 'simulated_signature_exposures' not found
+```
+
+```r
 plot_grid(
   simulated_best_fit_plot + theme(legend.position = 'none') + labs(title = 'Solutions of each cluster (by lowest RSS)'),
   simulated_most_densest_region_plot + theme(legend.position = 'none') + labs(title = 'Solutions of each cluster (by highest density region)'),
@@ -399,4 +472,6 @@ plot_grid(
   )
 ```
 
-![plot of chunk simulated_exposure_mcmc_chains](figures/simulated_exposure_mcmc_chains-1.png)
+```
+## Error in plot_grid(simulated_best_fit_plot + theme(legend.position = "none") + : object 'simulated_best_fit_plot' not found
+```
