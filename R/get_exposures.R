@@ -54,13 +54,7 @@ get_exposures <- function(mutation_catalog = NULL, file = NULL, reference_signat
         reference_signatures <- get_reference_signatures()
     }
 
-    reference_signatures <- get_reference_signatures()
-
-    # Reorder mutation catalog vector so that the mutation types are same order as reference_signatures
-    mutation_catalog <- reference_signatures %>%
-        left_join(mutation_catalog %>% dplyr::rename(count_ = count), by = 'mutation_type') %>%
-        replace_na(list(count_ = 0)) %>%
-        select(mutation_type, count = count_)
+    reference_signatures <- normalize_reference_signatures(reference_signatures)
 
     signature_names <- reference_signatures %>% select(-mutation_type) %>% colnames
     n_mutations <- sum(mutation_catalog$count)
@@ -71,7 +65,7 @@ get_exposures <- function(mutation_catalog = NULL, file = NULL, reference_signat
             S = reference_signatures %>% select(-mutation_type) %>% dim %>% .[2],
             R = reference_signatures %>% dim %>% .[1],
             v = mutation_catalog$count,
-            ref_signatures = reference_signatures %>% select(-mutation_type) %>% as.matrix
+            ref_signatures = reference_signatures %>% reference_signatures_as_matrix(mutation_catalog)
         )
 
         message('Sampling')

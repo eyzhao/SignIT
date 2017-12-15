@@ -21,10 +21,15 @@ reference_signatures_as_matrix <- function(reference_signatures, mutation_catalo
   if (! mutation_types_match(reference_signatures, mutation_catalog, order_is_important = FALSE)) {
     stop('mutation_type does not match Stratton 30-signature reference mutation types')
   }
+
+  catalog_columns <- colnames(mutation_catalog)
   
   reference_signatures <- mutation_catalog %>%
     select(mutation_type) %>%
-    left_join(reference_signatures, by = 'mutation_type')
+    left_join(reference_signatures, by = 'mutation_type') %>%
+    select(-mutation_type)
+
+  reference_signatures <- reference_signatures[! reference_signatures %in% catalog_columns]
   
-  return(reference_signatures[, grepl('Signature ', names(reference_signatures))] %>%  as.matrix())
+  return(reference_signatures %>% as.matrix())
 }
