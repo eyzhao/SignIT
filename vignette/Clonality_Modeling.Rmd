@@ -26,6 +26,10 @@ mutations <- mutations_raw %>%
   )
 
 print(mutations)
+
+rcat <- function(n, p) {
+  apply(rmultinom(n, 1, p), 2, function(z) {which(z == 1)})
+}
 ```
 
 ```{r exploratory_plot}
@@ -36,14 +40,197 @@ mutations %>%
   geom_histogram()
 ```
 
+Calculating BIC from MCMC output
+
+```{r mcmc_bic}
+compute_likelihood <- function(successes, trials, correction, clone_prop, mu, kappa) {
+  tibble(
+    idx = 1:length(mu), 
+    mu,
+    clone_prop
+  ) %>% plyr::ddply(c('idx', 'clone_prop'), function(z) {
+    print(length(correction * z$mu))
+    likelihoods = rmutil::dbetabinom(successes, trials, correction * z$mu, kappa)
+    return(data.frame(
+      mutation_id = 1:length(successes),
+      likelihoods
+    ))
+  }) %>%
+  group_by(mutation_id) %>%
+  summarise(
+    likelihood = log(sum(likelihoods * clone_prop))
+  ) %>%
+  ungroup() %>%
+  .$likelihood %>%
+  sum
+}
+
+mcmc_out <- readRDS('~/1_clusters.Rds')
+mcmc_chains <- mcmc_out %>% 
+  as.array %>%
+  plyr::adply(2, function(z) { as_tibble(z) }) %>%
+    mutate(
+        iteration = row_number(),
+        chain = factor(chains) %>% as.integer
+    ) %>%
+  select(-chains) %>% 
+  as_tibble() %>%
+  gather(parameter, value, -chain, -iteration)
+
+mcmc_mu <- mcmc_chains %>%
+  group_by(chain, iteration) %>%
+  mutate(
+    parameter_name = gsub('(.*?)\\[.*?\\].*', '\\1', parameter)
+  ) %>%
+  filter(parameter_name == 'clone_prop' | parameter_name == 'mu') %>%
+  mutate(
+    parameter_index = gsub('.*?\\[(.*?)\\].*', '\\1', parameter) %>% as.numeric
+  ) %>%
+  select(-parameter) %>%
+  arrange(parameter_name, parameter_index) %>%
+  mutate(
+    parameter_index = rep(order(value[parameter_name == 'clone_prop']), 2)
+  ) %>%
+  ungroup() %>%
+  arrange(chain, iteration, parameter_name, parameter_index)
+
+mcmc_mu %>%
+  ggplot(aes(
+    x = value
+  )) +
+  geom_histogram() +
+  facet_grid(parameter_name ~ parameter_index)
+  
+mu_estimate = mcmc_mu %>%
+  filter(parameter_name == 'mu') %>%
+  group_by(parameter_name, parameter_index) %>%
+  summarise(
+    mean = mean(value)
+  ) %>%
+  arrange(parameter_index) %>%
+  .$mean
+
+clone_estimate = mcmc_mu %>%
+  filter(parameter_name == 'clone_prop') %>%
+  group_by(parameter_name, parameter_index) %>%
+  summarise(
+    mean = mean(value)
+  ) %>%
+  arrange(parameter_index) %>%
+  .$mean
+
+kappa_estimate = mcmc_chains %>%
+  filter(parameter == 'kappa_minus_two') %>%
+  .$value %>% mean + 2
+
+log_lik = with(
+  mutations,
+  compute_likelihood(
+    successes = alt_depth,
+    trials = total_depth,
+    correction = tumour_content / ((tumour_content * tumour_copy) + ((1 - tumour_content) * normal_copy)),
+    clone_prop = clone_estimate,
+    mu = mu_estimate,
+    kappa = kappa_estimate
+  )
+)
+
+n = nrow(mutations)
+k = length(mu_estimate)
+
+bic = log(n) * k - ( 2 * log_lik )
+
+print(bic)
+```
+
+Let's attempt EM
+
+```{r model_selection_finite_mixture}
+library(purrr)
+
+
+fit_beta_binom_mle <- function(alt_depth, total_depth, correction) {
+  log_likelihood <- function(mu, kappa) {
+    -sum(rmutil::dbetabinom(alt_depth, total_depth, mu * correction, kappa, log = TRUE))
+  }
+  m <- stats4::mle(
+    log_likelihood, 
+    start = list(mu = 0.5, kappa = 10), 
+    method = "L-BFGS-B",
+    lower = c(0.001, 0.001),
+    upper = c(1, Inf)
+  )
+  ab <- stats4::coef(m)
+  data_frame(mu = ab[1], kappa = ab[2], number = length(alt_depth))
+}
+
+iterate_em <- function(state, ...) {
+  fits <- state$assignments %>%
+    group_by(cluster) %>%
+    do(mutate(fit_beta_binom_mle(.$alt_depth, .$total_depth, .$correction), number = nrow(.))) %>%
+    ungroup() %>%
+    mutate(prior = number / sum(number))
+
+  assignments <- assignments %>%
+    select(-cluster) %>%
+    crossing(fits) %>%
+    mutate(likelihood = rmutil::dbetabinom(alt_depth, total_depth, mu * correction, kappa)) %>%
+    group_by(mutation_id) %>%
+    top_n(1, likelihood) %>%
+    ungroup()
+  
+  list(assignments = assignments,
+       fits = fits)
+}
+
+n_cluster = 10
+init = mutations %>%
+  mutate(
+    mutation_id = row_number(),
+    cluster = rcat(n(), rep(1, n_cluster) / n_cluster),
+    correction = tumour_content / ((tumour_content * tumour_copy) + ((1 - tumour_content) * normal_copy))
+  )
+
+assignments <- init
+iterations <- accumulate(1:10, iterate_em, .init = list(assignments = init))
+
+fit_iterations <- iterations %>%
+  map_df("fits", .id = "iteration") %>%
+  mutate(iteration = as.numeric(iteration))
+
+fit_iterations %>%
+  gather(parameter, estimate, mu, kappa) %>%
+  ggplot(aes(
+    x = iteration,
+    y = estimate,
+    colour = cluster,
+    group = cluster
+  )) +
+  geom_line() +
+  facet_grid(. ~ parameter)
+
+fit <- iterations[[10]]$fits
+out <- iterations[[10]]$assignments
+
+bic_df <- out %>%
+  mutate(
+    likelihood = dbetabinom(alt_depth, total_depth, mu * correction, kappa, log = TRUE)
+  )
+
+n = nrow(bic_df)
+k = bic_df$cluster %>% unique %>% length
+L = bic_df$likelihood %>% sum
+
+BIC = -2 * L + ( k * log(n))
+print(BIC)
+
+```
+
+
 ```{r simulate_data}
 f_m_true = c(0.44986, 0.96522)
 clone_prop = c(0.35836, 0.64164)
 dispersion = 1/0.01582
-
-rcat <- function(n, p) {
-  apply(rmultinom(n, 1, p), 2, function(z) {which(z == 1)})
-}
 
 z = rcat(dim(mutations)[1], clone_prop)
 f_m = sapply(z, function(i) {f_m_true[i]})
@@ -51,7 +238,7 @@ a = with(mutations, tumour_content / (tumour_content * tumour_copy + (1 - tumour
 binom_prob = f_m * a
 
 x = sapply(1:dim(mutations)[1], function(n) {
-  rbetabinom(n = 1, size = mutations$total_depth[n], m = binom_prob[n], s = 600)
+  rmutil::rbetabinom(n = 1, size = mutations$total_depth[n], m = binom_prob[n], s = 600)
 })
 
 simulated_var_reads <- tibble(simulated_var = x/ mutations$total_depth) %>%
