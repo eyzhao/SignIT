@@ -37,15 +37,6 @@ get_exposure_summary_table <- function(exposures_mcmc_output, alpha = c(0, 0.05,
         }
     }
 
-    get_mode <- function(v) {
-        if (all(length(unique(v)) == 1)) {
-            return(unique(v))
-        } else {
-            d <- density(v)
-            d$x[d$y == max(d$y)] %>% .[ceiling(length(.) / 2)]
-        }
-    }
-
     centre_table <- exposures_mcmc_output$exposure_chain %>%
         group_by(signature) %>%
         summarise(

@@ -7,10 +7,6 @@
 #' @param mutation_catalog      Data frame with columns mutation_type, count. The mutation types
 #'                              must be equivalent to those in reference_signatures.
 #'
-#' @param file                  The mutation catalog can be stored as a TSV file, and its path can
-#'                              can be provided in this parameter. Either mutation_catalog or file MUST
-#'                              be provided.
-#'
 #' @param reference_signatures  Reference mutation signatures, such as that output from get_reference_signatures.
 #'
 #' @param n_chains              Number of MCMC chains
@@ -26,28 +22,25 @@
 #'
 #' @export
 
-get_exposures <- function(mutation_catalog = NULL, file = NULL, reference_signatures = NULL, n_chains = 4, n_iter = 200, n_adapt = 200, n_cores = 1, stan_model = NULL) {
+get_exposures <- function(
+    mutation_catalog,
+    reference_signatures = NULL, 
+    n_chains = 4, 
+    n_iter = 200, 
+    n_adapt = 200, 
+    n_cores = n_chains,
+    stan_model = NULL,
+    quiet = FALSE
+) {
     if (is.null(stan_model)) {
-        stan_model <- get_signature_model()
-    }
-
-    if (is.null(mutation_catalog) && is_null(file)) {
-        stop('Must either provide mutation_catalog as data frame or path to TSV file')
-    } else if (is.null(mutation_catalog)) {
-        mutation_catalog <- read_tsv(
-          file, 
-          col_types = cols(
-            mutation_type = col_character(),
-            count = col_number()
-          )
-        ) %>%
-        mutate(
-            count = as.integer(round(count))
-        )
+        stan_model <- get_stan_model('signature')
     }
 
     if (! 'mutation_type' %in% names(mutation_catalog) || ! 'count' %in% names(mutation_catalog)) {
-        stop('Mutation catalog is not properly formatted. Must have two columns: mutation_type (character) and count (integer)')
+        stop('
+             Mutation catalog is not properly formatted. 
+             Must have two columns: mutation_type (character) and count (integer)
+        ')
     }
 
     if (is.null(reference_signatures)) {
@@ -78,7 +71,9 @@ get_exposures <- function(mutation_catalog = NULL, file = NULL, reference_signat
             warmup = n_adapt,
             cores = n_cores,
             control = list(
-            )
+            ),
+            open_progress = ! quiet,
+            show_messages = ! quiet
         )
 
         fit <- stan_object %>% as.array
