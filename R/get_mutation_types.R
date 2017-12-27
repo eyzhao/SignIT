@@ -51,9 +51,13 @@ get_trinucleotide <- function(chr, pos, ref, genome = BSgenome.Hsapiens.UCSC.hg1
     trinucleotide = getSeq(genome, chromosome, pos - 1, pos + 1) %>% as.character
     genome_ref = substr(trinucleotide, 2, 2)
     
-    stopifnot(
-        all(genome_ref == ref)
-    )
+    if (any(genome_ref != ref)) {
+        if (all(genome_ref[genome_ref != ref] == 'N')) {
+            warning(sprintf('%s positions matched N in genome ref.', sum(genome_ref != ref)))
+        } else {
+            stop('Some positions did not match reference genome. Stopping.')
+        }
+    }
 
     return(trinucleotide)
 }

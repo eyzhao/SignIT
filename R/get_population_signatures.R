@@ -52,15 +52,6 @@ get_population_signatures <- function(
         summarise(count = n()) %>%
         ungroup()
 
-    if (is.null(reference_signatures)) {
-        reference_signatures <- get_reference_signatures() 
-    }
-
-    if (subset_signatures) {
-        message('Subsetting reference signatures on request')
-        reference_signatures <- subset_reference_signatures(catalog, reference_signatures)
-    }
-
     if (is.null(n_clusters)) {
         message('No number of populations provided. Will run automatic model selection.')
         n_population_selection <- select_n_populations(mutation_table)
@@ -73,11 +64,21 @@ get_population_signatures <- function(
     } else {
         message(sprintf('Extracting parameters from population model with %s populations', n_clusters))
 
+        n_population_selection <- NULL
         population_mcmc <- get_population(mutation_table, n_clusters)
         mu <- population_mcmc$parameter_estimates$mu
         kappa <- population_mcmc$parameter_estimates$kappa
 
         message('Done extracting population parameters.')
+    }
+
+    if (is.null(reference_signatures)) {
+        reference_signatures <- get_reference_signatures() 
+    }
+
+    if (subset_signatures) {
+        message('Subsetting reference signatures on request')
+        reference_signatures <- subset_reference_signatures(catalog, reference_signatures)
     }
 
     message(sprintf(
@@ -87,7 +88,7 @@ get_population_signatures <- function(
         n_clusters
     ))
 
-    run_joint_population_signatures(
+    output <- run_joint_population_signatures(
         mutation_table,
         reference_signatures,
         n_populations = n_clusters,
@@ -97,6 +98,10 @@ get_population_signatures <- function(
         n_adapt = n_adapt,
         method = method
     )
+
+    output['model_selection_data'] = n_population_selection
+
+    return(output)
 }
 
 run_joint_population_signatures <- function(
@@ -156,4 +161,3 @@ run_joint_population_signatures <- function(
         mcmc_output = stan_fit
     ))
 }
-
