@@ -36,15 +36,21 @@ reverse_factor_ranks <- function(x) {
   factor(as.character(x), levels = rev(levels(x)))
 }
 
-plot_population_signatures <- function(joint_model_output) {
-
+summarise_population_signatures <- function(joint_model_output) {
   signature_names <- joint_model_output$reference_signatures %>%
     select(-mutation_type) %>%
     colnames
 
+
+}
+
+map_population_signatures <- function(joint_model_output) {
+  signature_names <- joint_model_output$reference_signatures %>%
+    select(-mutation_type) %>%
+    colnames
   n_populations <- joint_model_output$n_populations
 
-  phi_df <- joint_model_output$mcmc_output %>%
+  joint_model_output$mcmc_output %>%
     parse_population_signatures %>%
     filter(parameter_name == 'phi') %>%
     mutate(
@@ -58,7 +64,40 @@ plot_population_signatures <- function(joint_model_output) {
         map_phi_to_signature(parameter_index, signature_names),
         levels = signature_names
       )
+    )
+}
+
+summarise_population_signatures <- function(joint_model_output) {
+  joint_model_output %>%
+    map_population_signatures %>%
+    group_by(population, signature) %>%
+    summarise(
+      mean = mean(value),
+      median = median(value),
+      mode = get_mode(value),
+      sd = sd(value)
     ) %>%
+    ungroup() %>%
+    group_by(
+      population
+    ) %>%
+    mutate(
+      mean = mean / sum(mean),
+      median = median / sum(median),
+      mode = mode / sum(mode),
+      sd = sd / sum(mean)
+    )
+}
+
+plot_population_signatures <- function(joint_model_output) {
+  signature_names <- joint_model_output$reference_signatures %>%
+    select(-mutation_type) %>%
+    colnames
+
+  n_populations <- joint_model_output$n_populations
+
+  phi_df <- joint_model_output %>%
+    map_population_signatures %>%
     group_by(iteration, chain, population) %>%
     mutate(phi_normalized = value / sum(value)) %>%
     ungroup()
@@ -140,5 +179,4 @@ plot_population_signatures <- function(joint_model_output) {
       nrow = 1,
       rel_widths = c(3,1)
     )
-
 }

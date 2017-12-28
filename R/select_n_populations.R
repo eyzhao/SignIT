@@ -2,26 +2,28 @@ select_n_populations <- function(mutation_table, parallel = TRUE) {
     message('Testing clonality models for 1-5 populations.')
 
     if (parallel) {
-        registerDoParallel(5)
+        n_cores <- min(detectCores(), 5)
+        registerDoParallel(n_cores)
     }
 
-    models <- plyr::dlply(
-        tibble(n_populations = 1:5),
-        'n_populations',
-        function(n_populations) {
+    models <- foreach(
+      i = 1:5,
+      .combine = c,
+      .packages = c('tidyverse', 'signit')
+    ) %dopar% {
             population_mcmc_output <- get_populations(
                 mutation_table,
-                as.integer(n_populations),
+                n_populations = i,
                 method = 'MAP'
             )
 
             BIC = population_mcmc_output$BIC
 
-            return(list(
+            return(list(list(
                 mcmc_output = population_mcmc_output,
                 BIC = BIC
-            ))
-    }, .parallel = TRUE)
+            )))
+    }
 
     BIC_vector <- sapply(models, function(z) {
         z$BIC
