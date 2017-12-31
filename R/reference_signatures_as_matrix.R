@@ -1,5 +1,7 @@
 #' Convert reference signatures to matrix
 #'
+#' Converts a data frame of reference signature data to the matrix form.
+#'
 #' When generating the matrix, a mutation catalog is required. Because the matrix output
 #' does not have a mutation_type column, the matrix rows are arranged so that mutation types
 #' match the order of the provide mutation catalog. This way, the matrix output can immediately

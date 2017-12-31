@@ -1,5 +1,7 @@
 #' Rotates the x axis labels 90 degrees in ggplot graphs.
 #'
+#' Convenience function for plots.
+#'
 #' @return ggplot component which can be added to a ggplot graph with the "+" operator.
 #'
 #' @import ggplot

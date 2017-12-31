@@ -5,8 +5,7 @@
 \title{Plots a hexplot between two signatures}
 \usage{
 plot_two_signature_hexplot(exposures_mcmc_output, signature_name_1,
-  signature_name_2, exposure_mcmc_clusters = NULL, cluster_number = NULL,
-  trendline = TRUE)
+  signature_name_2, trendline = TRUE)
 }
 \arguments{
 \item{exposures_mcmc_output}{Output from get_exposures.}
@@ -14,11 +13,6 @@ plot_two_signature_hexplot(exposures_mcmc_output, signature_name_1,
 \item{signature_name_1}{String denoting signature name (must match one of those in exposures_mcmc_output)}
 
 \item{signature_name_2}{String denoting signature name (must match one of those in exposures_mcmc_output)}
-
-\item{exposure_mcmc_clusters}{Optionally, you can provide the output from density_clustering, which allows
-you to visualize the comparison plot for a single cluster.}
-
-\item{cluster_number}{If you wish to visualize a single cluster, provide the cluster number here.}
 
 \item{trendline}{Boolean value specifying whether to plot a linear trendline.}
 }

@@ -1,3 +1,5 @@
+#' Graph Representing Signature Bleed Relationships
+#'
 #' Creates an iGraph object representing bleed between mutation signatures.
 #'
 #' @param exposure_output       Output from get_exposures

@@ -2,7 +2,7 @@
 % Please edit documentation in R/mcmc_exposures_as_matrix.R
 \name{mcmc_exposures_as_matrix}
 \alias{mcmc_exposures_as_matrix}
-\title{Convert MCMC sampled exposure values to matrix format}
+\title{MCMC Exposures to Matrix}
 \usage{
 mcmc_exposures_as_matrix(exposures_mcmc_output)
 }
@@ -13,6 +13,9 @@ mcmc_exposures_as_matrix(exposures_mcmc_output)
 Matrix of MCMC iterations. One row per iteration, one column per signature.
 }
 \description{
+Convert MCMC sampled exposure values to matrix format
+}
+\details{
 MCMC samples of exposure solutions are initially in long format, with one row per
 signature per iteration. This method converts this data frame to wide format,
 with one row per iteration and one column per signature. It them converts this

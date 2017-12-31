@@ -1,7 +1,8 @@
 #' Normalization of reference signatures.
 #'
-#' Ensures that all columns of a reference signature matrix add up to 1,
-#' and that all non-zero values are replaced with a very small number
+#' Ensures that all columns of reference signature matrix add to 1.
+#'
+#' Also replaces all non-zero values are replaced with a very small number
 #' (.Machine$double.eps).
 #'
 #' @param reference_signature_df        Reference signature data frame, such as the

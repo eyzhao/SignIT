@@ -2,7 +2,7 @@
 % Please edit documentation in R/mutation_types_match.R
 \name{mutation_types_match}
 \alias{mutation_types_match}
-\title{Check whether mutation types match}
+\title{Check Whether Mutation Types Match}
 \usage{
 mutation_types_match(catalogs_1, catalogs_2, order_is_important = TRUE)
 }
@@ -18,6 +18,9 @@ type before they are compared.}
 Boolean value. TRUE if mutation types match. FALSE otherwise.
 }
 \description{
+Returns boolean value indicating whether two catalogs/reference signatures have matching mutation types
+}
+\details{
 Given two mutation catalogs, check that their mutation types match.
 This is an important safeguard against potential errors which can arise
 when catalogs have mismatched mutation types.

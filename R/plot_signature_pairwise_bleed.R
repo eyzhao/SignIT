@@ -35,5 +35,3 @@ plot_signature_pairwise_bleed <- function(exposures_mcmc_output) {
     rotate_x_axis_labels() +
     labs(x = 'First Signature', y = 'Second Signature', fill = 'Spearman Rho\n')
 }
-
-

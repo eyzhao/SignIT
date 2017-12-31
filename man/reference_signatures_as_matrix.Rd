@@ -17,6 +17,9 @@ matrix such that they correspond with the mutation type order in mutation_catalo
 A matrix with named columns, one for each signature.
 }
 \description{
+Converts a data frame of reference signature data to the matrix form.
+}
+\details{
 When generating the matrix, a mutation catalog is required. Because the matrix output
 does not have a mutation_type column, the matrix rows are arranged so that mutation types
 match the order of the provide mutation catalog. This way, the matrix output can immediately

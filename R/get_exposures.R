@@ -33,7 +33,7 @@ get_exposures <- function(
     quiet = FALSE
 ) {
     if (is.null(stan_model)) {
-        stan_model <- get_stan_model('signature')
+        stan_model <- stanmodels$signature_model
     }
 
     if (! 'mutation_type' %in% names(mutation_catalog) || ! 'count' %in% names(mutation_catalog)) {

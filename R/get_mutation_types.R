@@ -22,10 +22,11 @@ all_snv_mutation_types <- function() {
 
 #' Gets the trinucleotide context for a set of genomic coordinates.
 #'
-#' @param chr Character vector of chromosome names. Must match provided genome.
-#' @param pos Integer vector of genomic positions.
-#' @param genome BSgenome object - default is BSgenome.Hsapiens.UCSC.hg19
-#' @return Character vector of trinucleotide contexts
+#' @param chr       Character vector of chromosome names. Must match provided genome.
+#' @param pos       Integer vector of genomic positions.
+#' @param genome    BSgenome object - default is BSgenome.Hsapiens.UCSC.hg19
+#'
+#' @return          Character vector of trinucleotide contexts
 #'
 #' @import BSgenome
 #' @import BSgenome.Hsapiens.UCSC.hg19
@@ -114,8 +115,8 @@ collapse_mutation_types <- function(mutation_types) {
 #' Given a set of substitutions and trinucleotides, merge into unique mutation
 #' types. For example, T>A mutation in CTG context will become C[T>A]G.
 #'
-#' @param substitution Character vector of substitutions in the form T>A
-#' @param trinucleotide Character vector of trinucleotide contexts in the form CTG
+#' @param substitution      Character vector of substitutions in the form T>A
+#' @param trinucleotide     Character vector of trinucleotide contexts in the form CTG
 #' @return Character vector of mutation types in the form C[T>A]G
 
 stitch_mutation_types <- function(substitution, trinucleotide) {

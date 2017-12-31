@@ -10,5 +10,5 @@ rotate_x_axis_labels()
 ggplot component which can be added to a ggplot graph with the "+" operator.
 }
 \description{
-Rotates the x axis labels 90 degrees in ggplot graphs.
+Convenience function for plots.
 }

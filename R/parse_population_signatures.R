@@ -1,4 +1,15 @@
-parse_population_signatures <- function(population_mcmc_out) {
+#' Stan Output Parser
+#'
+#' Converts Stan output to a long form tidy tibble
+#'
+#' @param population_mcmc_output        Output from \code{\link{get_population_signatures}}.
+#'
+#' @return Tibble with chain information.
+#'
+#' @import dplyr
+#' @import tidyr
+
+parse_stan_output <- function(population_mcmc_out) {
   mcmc_chains <- population_mcmc_out %>%
     as.array %>%
     plyr::adply(2, function(z) { as_tibble(z) }) %>%
@@ -18,31 +29,63 @@ parse_population_signatures <- function(population_mcmc_out) {
   return(mcmc_chains)
 }
 
+#' Signature Index Mapper
+#'
+#' Maps parameter values to their respective mutation signatures
+#'
+#' @param phi_index         Parameter index in output from \code{\link{get_population_signatures}}.
+#' @param signature_names   Vector of mutation signature names in order of appearance in reference signatures.
+#'
+#' @return Vector of signature names corresponding to parameter indices.
+
 map_phi_to_signature <- function(phi_index, signature_names) {
   n_signatures <- length(signature_names)
   return(signature_names[((phi_index - 1) %% n_signatures) + 1])
 }
 
+#' Population Index Mapper
+#'
+#' Maps parameter values to their respective populations
+#'
+#' @param phi_index         Parameter index in output from \code{\link{get_population_signatures}}.
+#' @param signature_names   Vector of mutation signature names in order of appearance in reference signatures.
+#' @param n_populations     Number of populations which the model was run with
+#'
+#' @return Vector of population names corresponding to parameter indices.
+
 map_phi_to_population <- function(phi_index, signature_names, n_populations) {
   return(ceiling(phi_index / length(signature_names)))
 }
+
+#' Reverse Factor Levels
+#'
+#' Takes a factor, reorders the levels, and reassigns values to the new levels.
+#'
+#' @param x     A factor
+#' @return A factor with levels reversed
 
 reverse_factor_levels <- function(x) {
   levels(x) <- rev(levels(x))
   return(x)
 }
 
+#' Reverse Factor Ranks
+#'
+#' Takes a factor and re-ranks its levels. None of the values change, but the level ranks are reordered.
+#'
+#' @param x     A factor
+#' @return A factor with levels re-ranked
+
 reverse_factor_ranks <- function(x) {
   factor(as.character(x), levels = rev(levels(x)))
 }
 
-summarise_population_signatures <- function(joint_model_output) {
-  signature_names <- joint_model_output$reference_signatures %>%
-    select(-mutation_type) %>%
-    colnames
-
-
-}
+#' Maps Population Signature Parameters to their Signatures and Population Names
+#'
+#' Population signature model indices each correspond with specific signature and population indices.
+#'
+#' @param joint_model_output        Output from \code{\link{get_population_signatures}}.
+#' @return Same as input, with two new columns for signature name and population name.
 
 map_population_signatures <- function(joint_model_output) {
   signature_names <- joint_model_output$reference_signatures %>%
@@ -51,7 +94,7 @@ map_population_signatures <- function(joint_model_output) {
   n_populations <- joint_model_output$n_populations
 
   joint_model_output$mcmc_output %>%
-    parse_population_signatures %>%
+    parse_stan_output %>%
     filter(parameter_name == 'phi') %>%
     mutate(
       population = map_phi_to_population(parameter_index, signature_names, n_populations),
@@ -67,6 +110,16 @@ map_population_signatures <- function(joint_model_output) {
     )
 }
 
+#' Summarise Population Signatures
+#'
+#' Report summary statistics (mean, median, mode, and SD) for population signature parameters
+#'
+#' @param joint_model_output        Output from \code{\link{get_population_signatures}}.
+#' @return Tibble of summary statistics
+#'
+#' @import dplyr
+#' @export
+
 summarise_population_signatures <- function(joint_model_output) {
   joint_model_output %>%
     map_population_signatures %>%
@@ -74,7 +127,7 @@ summarise_population_signatures <- function(joint_model_output) {
     summarise(
       mean = mean(value),
       median = median(value),
-      mode = get_mode(value),
+      mode = get_density_mode(value),
       sd = sd(value)
     ) %>%
     ungroup() %>%
@@ -88,6 +141,19 @@ summarise_population_signatures <- function(joint_model_output) {
       sd = sd / sum(mean)
     )
 }
+
+#' Plot Population Signatures
+#'
+#' Creates a violin plot of the full posterior estimates for population signature exposures.
+#'
+#' @param joint_model_output    Output from \code{\link{get_population_signatures}}.
+#' @return ggplot object with population mutation prevalences, proportions, and signature exposures.
+#' 
+#' @import dplyr
+#' @import tidyr
+#' @import ggplot
+#' @import cowplot
+#' @export
 
 plot_population_signatures <- function(joint_model_output) {
   signature_names <- joint_model_output$reference_signatures %>%
@@ -131,7 +197,7 @@ plot_population_signatures <- function(joint_model_output) {
     scale_fill_brewer(palette = 'Set1')
 
   mu_df <- joint_model_output$mcmc_output %>%
-    parse_population_signatures %>%
+    parse_stan_output %>%
     filter(parameter_name == 'mu') %>%
     mutate(
       population = cut(

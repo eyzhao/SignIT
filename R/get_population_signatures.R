@@ -1,43 +1,96 @@
-subset_reference_signatures <- function(catalog, reference_signatures) {
-    n_mutations <- sum(catalog$count)
-
-    exposures <- catalog %>% 
-        get_exposures(quiet = TRUE) %>% 
-        get_exposure_summary_table %>% 
-        mutate(signature_present = `2.5%` > n_mutations / 2000)
-
-    involved_signatures <- exposures %>%
-        filter(signature_present) %>%
-        .$signature %>%
-        as.character
-
-    reference_signatures %>% 
-        gather(signature, probability, -mutation_type) %>% 
-        mutate(signature = factor(signature, levels = colnames(reference_signatures))) %>%
-        filter(signature %in% involved_signatures) %>% 
-        spread(signature, probability)
-}
+#' SignIT-Pop inference of populations and signatures
+#'
+#' Jointly infers mutational subpopulations and their associated mutation signature exposures
+#'
+#' \code{get_population_signatures} is the central function which facilitates Bayesian inference
+#' of mutational populations and signatures. This model infers a matrix of L x N parameters,
+#' where L is the number of populations and N is the number of signatures. The posterior distribution
+#' of each parameter is estimated using either automatic differentiation variational inference
+#' or Hamiltonial Monte Carlo using the \code{\link[rstan]{vb}} and \code{\link[rstan]{sampling}}
+#' methods respectively of the \pkg{rstan} package (an interface to the Stan probabilistic
+#' programming language).
+#'
+#' @param mutation_table        Table of mutations, one per row. The minimum input requires the 
+#'                              following columns: \itemize{
+#'                                  \item \strong{total_depth}: Total number of reads covering mutated locus.
+#'                                  \item \strong{alt_depth}: Total number of mutant reads covering locus.
+#'                                  \item \strong{tumour_copy}: Tumour copy number at the mutated locus
+#'                                  \item \strong{normal_copy}: Normal copy number at the mutated locus
+#'                                  \item \strong{tumour_content}: Estimated tumour content as a fraction
+#'                                                                 between 0 and 1. Must be the same value
+#'                                                                 throughout the whole table.
+#'                              }
+#'
+#' @param reference_signatures  Reference mutation signatures. This can either be from 
+#'                              \code{\link{get_reference_signatures}} or a custom data frame formatted
+#'                              equivalently.
+#'
+#' @param subset_signatures     Boolean. If TRUE (default), then \code{\link{subset_reference_signatures}}
+#'                              is run to pre-select a smaller subset of signatures most likely to be active
+#'                              in the cancer. This helps to reduce processing time and model complexity, but
+#'                              may bias the result.
+#'
+#' @param n_populations         The number of populations to screen for. Must be an integer. If no value is
+#'                              provided, then a model selection step is engaged to automatically estimate
+#'                              the number of populations. The automatic model selection uses
+#'                              \code{\link{select_n_populations}}, which performs a maximum a posteriori
+#'                              estimate using the SignIT population model (without mutation signature inference).
+#'
+#' @param genome                A BSgenome object. This is used to determine trinucleotide contexts of mutations
+#'                              to define mutation types. By default, uses BSgenome.Hsapiens.UCSC.hg19. To
+#'                              define custom mutation types, simply include a column named \code{mutation_type} in
+#'                              \code{mutation_table}, in which case this parameter is ignored.
+#'
+#' @param method                The posterior sampling method. This is a string and can either be 'vb' for
+#'                              automatic variational Bayes or 'mcmc' for Hamiltonial Monte Carlo.
+#'
+#' @param n_chains              Number of chains to sample. Only relevant if \code{method == 'mcmc'}.
+#'
+#' @param n_cores               Number of cores for parallel sampling. By default this equals the number of chains.
+#'                              Only relevant if \code{method == 'mcmc'}.
+#'
+#' @param n_iter                Number of sampling iterations per chain. These are distinct from adaptation iterations,
+#'                              so the total number of iterations will be \code{n_iter + n_adapt}.
+#'                              Only relevant if \code{method == 'mcmc'}.
+#'
+#' @param n_adapt               Number of adaptation iterations per chain. Only relevant if \code{method == 'mcmc'}.
+#'
+#' @return A list object with the posterior sampling of population signatures plus relevant input and metadata.
+#'
+#' @import dplyr
+#' @import tidyr
+#' @import tibble
+#' @import BSgenome
+#' @import rstan
+#'
+#' @export
 
 get_population_signatures <- function(
     mutation_table, 
     reference_signatures = NULL, 
     subset_signatures = TRUE,
-    n_clusters = NULL,
+    n_populations = NULL,
     genome = BSgenome.Hsapiens.UCSC.hg19,
+    method = 'vb',
     n_chains = 10,
     n_cores = n_chains,
     n_iter = 300,
-    n_adapt = 200,
-    method = 'mcmc'
+    n_adapt = 200
 ) {
     mutation_table <- mutation_table %>%
         distinct() %>%
         mutate(
-            correction = get_vaf_correction(.),
+            correction = get_vaf_correction(.)
+        )
+
+    if ('mutation_type' %in% colnames(mutation_table)) {
+        message("Using pre-specified mutation types.")
+    } else {
+        mutation_table <- mutation_table %>%
             mutation_type = get_snv_mutation_type(
                 chr, pos, ref, alt, genome
             )
-        )
+    } 
 
     n_mutations <- dim(mutation_table)[1]
 
@@ -52,20 +105,20 @@ get_population_signatures <- function(
         summarise(count = n()) %>%
         ungroup()
 
-    if (is.null(n_clusters)) {
+    if (is.null(n_populations)) {
         message('No number of populations provided. Will run automatic model selection.')
         n_population_selection <- select_n_populations(mutation_table)
 
-        n_clusters <- n_population_selection$optimal_n_populations
-        mu <- n_population_selection$evaluated_models[[n_clusters]]$parameter_estimates$mu
-        kappa <- n_population_selection$evaluated_models[[n_clusters]]$parameter_estimates$kappa
+        n_populations <- n_population_selection$optimal_n_populations
+        mu <- n_population_selection$evaluated_models[[n_populations]]$parameter_estimates$mu
+        kappa <- n_population_selection$evaluated_models[[n_populations]]$parameter_estimates$kappa
 
-        message(sprintf('Engaged auto-selection of clusters. Chose a model with %s clusters.', n_clusters))
+        message(sprintf('Engaged auto-selection of clusters. Chose a model with %s clusters.', n_populations))
     } else {
-        message(sprintf('Extracting parameters from population model with %s populations', n_clusters))
+        message(sprintf('Extracting parameters from population model with %s populations', n_populations))
 
         n_population_selection <- NULL
-        population_mcmc <- get_population(mutation_table, n_clusters)
+        population_mcmc <- get_population(mutation_table, n_populations)
         mu <- population_mcmc$parameter_estimates$mu
         kappa <- population_mcmc$parameter_estimates$kappa
 
@@ -85,36 +138,10 @@ get_population_signatures <- function(
         'Running model with provided reference signatures: %s signatures, %s mutation types, and %s clusters',
         reference_signatures %>% select(-mutation_type) %>% ncol,
         mutation_table %>% nrow,
-        n_clusters
+        n_populations
     ))
 
-    output <- run_joint_population_signatures(
-        mutation_table,
-        reference_signatures,
-        n_populations = n_clusters,
-        n_chains = n_chains,
-        n_cores = n_cores,
-        n_iter = n_iter,
-        n_adapt = n_adapt,
-        method = method
-    )
-
-    output['model_selection_data'] = n_population_selection
-
-    return(output)
-}
-
-run_joint_population_signatures <- function(
-    mutation_table, 
-    reference_signatures, 
-    n_populations,
-    n_chains = 10,
-    n_cores = n_chains,
-    n_iter = 300,
-    n_adapt = 200,
-    method = 'mcmc'
-) {
-    stan_dso = get_stan_model('joint')
+    stan_dso = stanmodels$signit_model_infer_populations
 
     stan_data = list(
         N = nrow(mutation_table),
@@ -154,10 +181,14 @@ run_joint_population_signatures <- function(
         stop('Method argument must be either "mcmc" or "vb"')
     }
 
-    return(list(
+    output <- list(
         mutation_table = mutation_table,
         reference_signatures = reference_signatures,
         n_populations = n_populations,
         mcmc_output = stan_fit
-    ))
+    )
+
+    output['model_selection_data'] = n_population_selection
+
+    return(output)
 }

@@ -13,11 +13,6 @@
 #'
 #' @param signature_name_2          String denoting signature name (must match one of those in exposures_mcmc_output)
 #'
-#' @param exposure_mcmc_clusters    Optionally, you can provide the output from density_clustering, which allows
-#'                                  you to visualize the comparison plot for a single cluster.
-#'
-#' @param cluster_number            If you wish to visualize a single cluster, provide the cluster number here.
-#'
 #' @param trendline                 Boolean value specifying whether to plot a linear trendline.
 #'
 #' @return A ggplot object showing the correlation of MCMC samples between two signatures.
@@ -28,22 +23,12 @@
 #'
 #' @export
 
-plot_two_signature_hexplot <- function(exposures_mcmc_output, signature_name_1, signature_name_2, exposure_mcmc_clusters = NULL, cluster_number = NULL, trendline = TRUE) {
+plot_two_signature_hexplot <- function(exposures_mcmc_output, signature_name_1, signature_name_2, trendline = TRUE) {
   hexplot_data <- exposures_mcmc_output %>%
     mcmc_exposures_as_matrix() %>%
     as_tibble %>%
     select(-iteration, -chain) %>%
     `colnames<-`(exposures_mcmc_output$signature_names) 
-  
-  if (is.null(cluster_number) | is.null(cluster_number)) {
-    title_text = 'All Clusters'
-  } else {
-    hexplot_data <- hexplot_data %>% 
-      mutate(cluster = exposure_mcmc_clusters$cluster %>% as.factor) %>%
-      filter(cluster == cluster_number)
-
-    title_text = paste0('Cluster ', cluster_number)
-  }
   
   hexplot_data <- hexplot_data[, c(
     signature_name_1 %>% as.character,
@@ -60,8 +45,7 @@ plot_two_signature_hexplot <- function(exposures_mcmc_output, signature_name_1, 
     )) +
     labs(
       x = signature_name_1,
-      y = signature_name_2,
-      title = title_text
+      y = signature_name_2
     ) +
     geom_hex(bins = 15) +
     scale_fill_distiller(palette = 'Spectral') +

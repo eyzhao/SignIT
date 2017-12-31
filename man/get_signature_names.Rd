@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_signature_names.R
 \name{get_signature_names}
 \alias{get_signature_names}
-\title{Retrieves the names of mutation signatures from reference signatures}
+\title{Parse Signature Names from Reference Signatures}
 \usage{
 get_signature_names(reference_signatures)
 }

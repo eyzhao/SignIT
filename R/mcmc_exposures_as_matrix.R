@@ -1,3 +1,5 @@
+#' MCMC Exposures to Matrix
+#'
 #' Convert MCMC sampled exposure values to matrix format
 #'
 #' MCMC samples of exposure solutions are initially in long format, with one row per

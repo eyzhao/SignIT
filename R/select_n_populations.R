@@ -1,3 +1,15 @@
+#' Automatic Model Selection for Number of Populations
+#'
+#' Attempts to estimate the number of mutation subpopulations using Bayesian information criterion.
+#'
+#' @param mutation_table    Input tibble, same as for \code{\link{get_population_signatures}}.
+#' @param parallel          Set TRUE to run in parallel on the available cores.
+#' @return List object reporting the optimal model, evaluated model outputs, and the BIC of each
+#'
+#' @import foreach
+#' @import doParallel
+#' @export
+
 select_n_populations <- function(mutation_table, parallel = TRUE) {
     message('Testing clonality models for 1-5 populations.')
 

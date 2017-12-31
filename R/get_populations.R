@@ -1,18 +1,42 @@
-get_vaf_correction <- function(mutation_table) {
-    with(
-        mutation_table,
-        tumour_content / ((tumour_content * tumour_copy) + ((1 - tumour_content) * normal_copy)),
-    )
-}
+#' SignIT population model without mutation signatures
+#'
+#' Inference of mutational subpopulations without joint inference of signatures
+#'
+#' This method can be used to obtain full posterior estimates of mutational subpopulations.
+#' It is also used under the hood by \code{\link{select_n_populations}} to perform automatic
+#' estimation of the number of populations for model selection.
+#'
+#' @param mutation_table        Table of mutations, same as input to 
+#'                              \code{\link{get_population_signatures}}.
+#'
+#' @param n_populations         Number of populations to fit.
+#'
+#' @param method                The method to use. Can be either "mcmc" for Hamiltonial 
+#'                              Markov Chain Monte Carlo or "MAP" for maximum a posteriori estimate.
+#'
+#' @param n_chains              Number of chains to use (only for \code{method == "mcmc"})
+#' @param n_iter                Number of sampling iterations per chain (only for \code{method == "mcmc"})
+#' @param n_adapt               Number of adaptation iterations per chain (only for \code{method == "mcmc"})
+#' @param n_cores               Number of cores for parallel sampling (by default equal to \code{n_chains}.
+#'                              only for \code{method == "mcmc"})
+#'
+#' @return List object with Stan output, parsed data, and relevant metadata
+#'
+#' @import tidyr
+#' @import dplyr
+#' @import tibble
+#' @import rstan
+#'
+#' @export
 
 get_populations <- function(
     mutation_table,
     n_populations,
+    method = 'mcmc',
     n_chains = 4, 
     n_iter = 300, 
     n_adapt = 200, 
-    n_cores = n_chains,
-    method = 'mcmc'
+    n_cores = n_chains
 ) {
     mutation_table <- mutation_table %>% distinct()
     n_mutations <- dim(mutation_table)[1]
@@ -26,7 +50,7 @@ get_populations <- function(
 
     message('Establishing Stan model')
 
-    stan_dso = get_stan_model('population')
+    stan_dso = stanmodels$population_model
 
     stan_data = list(
         N = n_mutations,
@@ -54,7 +78,7 @@ get_populations <- function(
             }
         )
 
-        parsed_output <- parse_population_model_mcmc(stan_fit)
+        parsed_output <- parse_stan_output(stan_fit)
         parameter_estimates <- get_population_parameter_estimates(parsed_output)
 
         population_mcmc_output <- list(
@@ -102,25 +126,17 @@ get_populations <- function(
     return(population_mcmc_output)
 }
 
-parse_population_model_mcmc <- function(population_mcmc_out) {
-    mcmc_chains <- population_mcmc_out %>% 
-        as.array %>%
-        plyr::adply(2, function(z) { as_tibble(z) }) %>%
-        mutate(
-            iteration = row_number(),
-            chain = factor(chains) %>% as.integer
-        ) %>%
-        select(-chains) %>% 
-        as_tibble() %>%
-        gather(parameter, value, -chain, -iteration) %>%
-        mutate(
-            parameter_name = gsub('(.*?)\\[.*?\\].*', '\\1', parameter),
-            parameter_index = gsub('.*?\\[(.*?)\\].*', '\\1', parameter) %>% as.numeric
-        ) %>%
-        select(-parameter)
-
-    return(mcmc_chains)
-}
+#' Point estimates for population Stan model output
+#'
+#' Parses Stan output and retrieves the mean for each parameter
+#'
+#' @param population_mcmc_parsed        Output from \code{\link{get_populations}} after
+#'                                      processed by \code{\link{parse_stan_output}}.
+#'
+#' @return List of parameter estimates.
+#'
+#' @import dplyr
+#' @import tidyr
 
 get_population_parameter_estimates <- function(population_mcmc_parsed) {
     estimates <- population_mcmc_parsed %>%
@@ -143,6 +159,15 @@ get_population_parameter_estimates <- function(population_mcmc_parsed) {
     return(estimates)
 }
 
+#' Bayesian Information Criterion for Population Models
+#'
+#' @param mutation_table            Table of mutation data, same as input for 
+#'                                  \code{\link{get_population_signatures}}.
+#'
+#' @param population_mcmc_output    Output from \code{\link{get_populations}}.
+#'
+#' @return BIC value
+
 compute_population_bic <- function(mutation_table, population_mcmc_output) {
     population_parameter_estimates <- population_mcmc_output$parameter_estimates
 
@@ -156,6 +181,20 @@ compute_population_bic <- function(mutation_table, population_mcmc_output) {
 
     return(log(n) * k - ( 2 * log_lik ))
 }
+
+#' Log Likelihood of Population Model
+#'
+#' Reports the log likelihood of data based on population model parameter estimates
+#'
+#' @param mutation_table            Table of mutation data, same as input for 
+#'                                  \code{\link{get_population_signatures}}.
+#'
+#' @param population_mcmc_output    Output from \code{\link{get_populations}}.
+#'
+#' @return Log likelihood value associated with data, model, and parameter estimates
+#'
+#' @import tidyr
+#' @import dplyr
 
 compute_population_model_log_likelihood <- function(mutation_table, population_mcmc_output) {
     parameter_estimates <- population_mcmc_output$parameter_estimates
@@ -186,5 +225,3 @@ compute_population_model_log_likelihood <- function(mutation_table, population_m
         .$likelihood %>%
         sum
 }
-
-

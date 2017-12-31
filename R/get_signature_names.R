@@ -1,3 +1,5 @@
+#' Parse Signature Names from Reference Signatures
+#'
 #' Retrieves the names of mutation signatures from reference signatures
 #'
 #' @param reference_signatures    Reference mutation signatures (i.e. from get_reference_signatures)

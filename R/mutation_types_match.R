@@ -1,4 +1,6 @@
-#' Check whether mutation types match
+#' Check Whether Mutation Types Match
+#'
+#' Returns boolean value indicating whether two catalogs/reference signatures have matching mutation types
 #'
 #' Given two mutation catalogs, check that their mutation types match.
 #' This is an important safeguard against potential errors which can arise

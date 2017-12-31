@@ -4,17 +4,13 @@
 \alias{get_exposures}
 \title{Compute the MCMC sample space of exposure vectors}
 \usage{
-get_exposures(mutation_catalog = NULL, file = NULL,
-  reference_signatures = NULL, n_chains = 4, n_iter = 200,
-  n_adapt = 200, n_cores = 1, stan_model = NULL)
+get_exposures(mutation_catalog, reference_signatures = NULL, n_chains = 4,
+  n_iter = 200, n_adapt = 200, n_cores = n_chains, stan_model = NULL,
+  quiet = FALSE)
 }
 \arguments{
 \item{mutation_catalog}{Data frame with columns mutation_type, count. The mutation types
 must be equivalent to those in reference_signatures.}
-
-\item{file}{The mutation catalog can be stored as a TSV file, and its path can
-can be provided in this parameter. Either mutation_catalog or file MUST
-be provided.}
 
 \item{reference_signatures}{Reference mutation signatures, such as that output from get_reference_signatures.}
 

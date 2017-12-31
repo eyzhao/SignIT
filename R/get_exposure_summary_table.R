@@ -40,7 +40,7 @@ get_exposure_summary_table <- function(exposures_mcmc_output, alpha = c(0, 0.05,
     centre_table <- exposures_mcmc_output$exposure_chain %>%
         group_by(signature) %>%
         summarise(
-            mode_exposure = get_mode(exposure),
+            mode_exposure = get_density_mode(exposure),
             mean_exposure = mean(exposure),
             median_exposure = median(exposure)
         )
