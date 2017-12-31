@@ -9,7 +9,9 @@ get_reference_signatures(signature_set = "cosmic_30")
 \arguments{
 \item{signature_set}{The name of the reference signature dataset.
 currently available options: 
-cosmic_30 (default) - the WTSI 30 SNV signatures}
+cosmic_30 (default) - the WTSI 30 SNV signatures
+cosmic_30_exome - WTSI signatures adjusted for exome trinucleotide frequencies
+nikzainal_sv - Structural variant signature frequencies}
 }
 \value{
 Data frame containing reference signatures in wide format, with a mutation_type column

@@ -19,7 +19,7 @@
 #'
 #' @import tibble
 #' @import dplyr
-#' @import ggplot
+#' @import ggplot2
 #'
 #' @export
 

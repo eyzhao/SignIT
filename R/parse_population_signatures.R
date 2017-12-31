@@ -151,7 +151,7 @@ summarise_population_signatures <- function(joint_model_output) {
 #' 
 #' @import dplyr
 #' @import tidyr
-#' @import ggplot
+#' @import ggplot2
 #' @import cowplot
 #' @export
 

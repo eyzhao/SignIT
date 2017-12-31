@@ -8,7 +8,7 @@
 #'
 #' @return A ggplot plot of the posterior distributions.
 #'
-#' @import ggplot
+#' @import ggplot2
 #' @import dplyr
 #'
 #' @export

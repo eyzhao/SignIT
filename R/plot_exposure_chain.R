@@ -8,7 +8,7 @@
 #'
 #' @return A ggplot object
 #'
-#' @import ggplot
+#' @import ggplot2
 #' @import magrittr
 #'
 #' @export

@@ -19,7 +19,7 @@
 #' @return A ggplot object showing a heatmap of pairwise correlation coefficients.
 #'
 #' @import dplyr
-#' @import ggplot
+#' @import ggplot2
 #'
 #' @export
 

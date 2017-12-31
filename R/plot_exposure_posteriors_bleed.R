@@ -7,7 +7,7 @@
 #'
 #' @return A cowplot merge of two ggplots showing the posterior distributions and signature bleed.
 #'
-#' @import ggplot
+#' @import ggplot2
 #' @import dplyr
 #' @import cowplot
 #' @import ggraph
