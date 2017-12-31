@@ -23,5 +23,8 @@ normalize_reference_signatures <- function(reference_signature_df) {
             probability = probability / sum(probability)
         ) %>% 
         ungroup() %>% 
+        mutate(
+            signature = factor(signature, levels = colnames(reference_signature_df))
+        ) %>%
         spread(signature, probability)
 }
