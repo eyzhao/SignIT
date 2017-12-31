@@ -16,7 +16,8 @@
 
 get_reference_signatures <- function(signature_set = 'cosmic_30') {
   available_reference_sets <- c(
-    'cosmic_30'
+    'cosmic_30',
+    'cosmic_30_exome'
   )
 
   if (! signature_set %in% available_reference_sets) {
@@ -28,6 +29,10 @@ get_reference_signatures <- function(signature_set = 'cosmic_30') {
   if (signature_set == 'cosmic_30') {  
     data('wtsi_30_snv_signatures') 
     wtsi_30_snv_signatures %>%
+      arrange(mutation_type)
+  } else if (signature_set == 'cosmic_30_exome') {
+    data('wtsi_30_snv_signatures_exome')
+    wtsi_30_snv_signatures_exome %>%
       arrange(mutation_type)
   }
 }
