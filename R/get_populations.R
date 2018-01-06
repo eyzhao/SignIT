@@ -26,6 +26,7 @@
 #' @import dplyr
 #' @import tibble
 #' @import rstan
+#' @import rmutil
 #'
 #' @export
 
