@@ -6,8 +6,9 @@
 #' @param parallel          Set TRUE to run in parallel on the available cores.
 #' @return List object reporting the optimal model, evaluated model outputs, and the BIC of each
 #'
-#' @import foreach
+#' @import parallel
 #' @import doParallel
+#' @import foreach
 #' @export
 
 select_n_populations <- function(mutation_table, parallel = TRUE) {
