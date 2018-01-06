@@ -7,6 +7,12 @@
 #'
 #' @import magrittr
 
-trim_signature_names <- function(signature) {
-  signature %>% `levels<-`(gsub('Signature ', '', levels(signature)))
+trim_signature_names <- function(signature, replace_string='Signature') {
+  signature %>% 
+    `levels<-`(
+        trimws(
+            gsub(replace_string, '', levels(signature)
+            )
+        )
+    )
 }

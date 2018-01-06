@@ -15,7 +15,7 @@
 #' @export
 
 
-plot_exposure_posteriors_bleed <- function(exposures_mcmc_output, view='violin', min_bleed = 0.2) {
+plot_exposure_posteriors_bleed <- function(exposures_mcmc_output, view='violin', min_bleed = 0.2, signature_trim='Signature', legend = TRUE, plot_heights = c(1,1)) {
     bleed_graph <- get_signature_bleed_graph(exposures_mcmc_output, min_bleed)
 
     bleed_plot <- bleed_graph %>%
@@ -35,7 +35,7 @@ plot_exposure_posteriors_bleed <- function(exposures_mcmc_output, view='violin',
         scale_y_continuous(limits = c(-15, 0), expand = c(-0.005, 0)) +
         scale_x_discrete(labels = exposures_mcmc_output$signature_names)
 
-    posterior_plot <- plot_exposure_posteriors(exposures_mcmc_output, view=view) +
+    posterior_plot <- plot_exposure_posteriors(exposures_mcmc_output, view=view, signature_trim=signature_trim) +
         theme(
             axis.title.x = element_blank()
         )
@@ -44,12 +44,17 @@ plot_exposure_posteriors_bleed <- function(exposures_mcmc_output, view='violin',
         posterior_plot,
         bleed_plot + theme(legend.position = 'none'),
         ncol = 1,
-        align = 'v'
-    ) %>%
-        plot_grid(
-            get_legend(bleed_plot),
-            rel_widths = c(5,1)
-        )  
+        align = 'v',
+        rel_heights = plot_heights
+    )
+
+    if (legend) {
+        final_plot <- final_plot %>%
+            plot_grid(
+                get_legend(bleed_plot),
+                rel_widths = c(5,1)
+            )  
+    }
 
     return(final_plot)
 }

@@ -20,7 +20,7 @@
 #' 
 #' @export
 
-plot_nnls_solution <- function(exposures_mcmc_output) {
+plot_nnls_solution <- function(exposures_mcmc_output, signature_trim='Signature') {
   nnls_solution <- nnls(
     exposures_mcmc_output$reference_signatures %>% select(-mutation_type) %>% as.matrix,
     exposures_mcmc_output$mutation_catalog$count
@@ -30,7 +30,7 @@ plot_nnls_solution <- function(exposures_mcmc_output) {
       signature = exposures_mcmc_output$signature_names %>% factor(levels = exposures_mcmc_output$signature_names),
       nnls = nnls_solution
     ) %>%
-    mutate(signature = trim_signature_names(signature)) %>%
+    mutate(signature = trim_signature_names(signature, signature_trim)) %>%
     ggplot(aes(x = signature, y = nnls)) +
     geom_point() +
     rotate_x_axis_labels()

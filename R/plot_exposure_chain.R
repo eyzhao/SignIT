@@ -13,11 +13,11 @@
 #'
 #' @export
 
-plot_exposure_chain <- function(exposures_mcmc_output) {
+plot_exposure_chain <- function(exposures_mcmc_output, signature_trim='Signature') {
   exposures_mcmc_output$exposure_chain %>%
     mutate(
       chain = factor(chain),
-      signature = trim_signature_names(signature)
+      signature = trim_signature_names(signature, signature_trim)
     ) %>%
     ggplot(aes(
       y = exposure,

@@ -52,7 +52,7 @@ plot_two_signature_hexplot <- function(exposures_mcmc_output, signature_name_1, 
     annotate(
       'text',
       label = paste0(
-        'Spearman Rho = ', spearman_rho), 
+        'Rho = ', spearman_rho), 
       x = max(hexplot_data$signature_1), 
       y = max(hexplot_data$signature_2) + 0.2 * (max(hexplot_data$signature_2) - min(hexplot_data$signature_2)), 
       hjust=1

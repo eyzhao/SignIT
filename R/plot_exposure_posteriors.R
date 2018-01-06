@@ -13,9 +13,11 @@
 #'
 #' @export
 
-plot_exposure_posteriors <- function(exposures_mcmc_output, view = 'violin') {
+plot_exposure_posteriors <- function(exposures_mcmc_output, view = 'violin', signature_trim='Signature') {
   plot <- exposures_mcmc_output$exposure_chain %>%
-    mutate(signature = trim_signature_names(signature)) %>%
+    mutate(
+        signature = trim_signature_names(signature, signature_trim)
+    ) %>%
     ggplot(aes(
       x = signature %>% as.factor,
       y = exposure

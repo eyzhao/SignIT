@@ -121,6 +121,17 @@ map_population_signatures <- function(joint_model_output) {
 #' @export
 
 summarise_population_signatures <- function(joint_model_output) {
+  populations <- joint_model_output$mcmc_output %>% 
+    parse_stan_output() %>% 
+    filter(parameter_name == 'mu') %>% 
+    group_by(parameter_index) %>% 
+    summarise(
+        prevalence_mean = mean(value)
+    ) %>% 
+    ungroup() %>%
+    arrange(prevalence_mean) %>%
+    mutate(population = paste('Population', 1:n()))
+
   joint_model_output %>%
     map_population_signatures %>%
     group_by(population, signature) %>%
@@ -139,7 +150,8 @@ summarise_population_signatures <- function(joint_model_output) {
       median = median / sum(median),
       mode = mode / sum(mode),
       sd = sd / sum(mean)
-    )
+    ) %>%
+    left_join(populations, by = 'population')
 }
 
 #' Plot Population Signatures
@@ -178,6 +190,7 @@ plot_population_signatures <- function(joint_model_output) {
     geom_violin(position = 'dodge') +
     scale_colour_brewer(palette = 'Set1') +
     scale_fill_brewer(palette = 'Set1') +
+    labs(x = 'Signature', y = 'Exposure Fraction', colour='Population', fill='Population') +
     theme(
       axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)
     )
@@ -194,7 +207,9 @@ plot_population_signatures <- function(joint_model_output) {
     geom_violin() +
     coord_flip() +
     scale_colour_brewer(palette = 'Set1') +
-    scale_fill_brewer(palette = 'Set1')
+    scale_fill_brewer(palette = 'Set1') +
+    labs(y = 'Proportion') +
+    theme(axis.title.y = element_blank())
 
   mu_df <- joint_model_output$mcmc_output %>%
     parse_stan_output %>%
@@ -216,7 +231,8 @@ plot_population_signatures <- function(joint_model_output) {
     geom_violin() +
     coord_flip() +
     scale_colour_brewer(palette = 'Set1') +
-    scale_fill_brewer(palette = 'Set1')
+    scale_fill_brewer(palette = 'Set1') +
+    labs(y = 'Prevalence')
 
   clone_plots <- plot_grid(
     clone_prop_distribution_plot +
