@@ -121,16 +121,24 @@ map_population_signatures <- function(joint_model_output) {
 #' @export
 
 summarise_population_signatures <- function(joint_model_output) {
-  populations <- joint_model_output$mcmc_output %>% 
-    parse_stan_output() %>% 
-    filter(parameter_name == 'mu') %>% 
-    group_by(parameter_index) %>% 
+  n_populations <- joint_model_output$n_populations
+
+  populations <- joint_model_output$mcmc_output %>%
+    parse_stan_output %>%
+    filter(parameter_name == 'mu') %>%
+    mutate(
+      population = cut(
+        parameter_index,
+        breaks = 0:n_populations,
+        labels = paste('Population', 1:n_populations)
+      ) %>% reverse_factor_levels %>% reverse_factor_ranks
+    ) %>%
+    select(population, value) %>%
+    group_by(population) %>%
     summarise(
         prevalence_mean = mean(value)
-    ) %>% 
-    ungroup() %>%
-    arrange(prevalence_mean) %>%
-    mutate(population = paste('Population', 1:n()))
+    ) %>%
+    ungroup()
 
   joint_model_output %>%
     map_population_signatures %>%
