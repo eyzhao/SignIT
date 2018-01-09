@@ -62,6 +62,8 @@ get_exposures <- function(
         )
 
         message('Sampling')
+        
+        progress_base = interactive() && !isatty(stdout()) && !identical(Sys.getenv("RSTUDIO"), "1")
 
         stan_object <- sampling(
             object = stan_model,
@@ -72,7 +74,7 @@ get_exposures <- function(
             cores = n_cores,
             control = list(
             ),
-            open_progress = ! quiet,
+            open_progress = (! quiet) && progress_base,
             show_messages = ! quiet
         )
 
