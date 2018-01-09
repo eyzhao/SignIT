@@ -154,6 +154,7 @@ summarise_population_signatures <- function(joint_model_output) {
       population
     ) %>%
     mutate(
+      population_proportion = sum(mean),
       mean = mean / sum(mean),
       median = median / sum(median),
       mode = mode / sum(mode),
