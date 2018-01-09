@@ -5,7 +5,14 @@ Mutation Signatures in Individual Tumours
 
 ### Development Version
 
-To install from GitHub, first make sure that you can install the rstan package and C++ toolchain by following [these instructions](https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started). Once rstan is successfully installed, you can install SignIT from GitHub using the devtools package by executing the following in R:
+To install from GitHub, first make sure that you can install the rstan package and C++ toolchain by following [these instructions](https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started). Also, be sure to install BSgenome from Bioconductor. If it is not installed, you can use the following commands in R:
+
+```{r}
+source("https://bioconductor.org/biocLite.R")
+biocLite('BSgenome')
+```
+
+Once rstan and BSgenome are successfully installed, you can install SignIT from GitHub using the devtools package by executing the following in R:
 
 ```{r}
 if (!require(devtools)) {
