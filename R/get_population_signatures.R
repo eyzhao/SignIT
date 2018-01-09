@@ -70,13 +70,16 @@ get_population_signatures <- function(
     reference_signatures = NULL, 
     subset_signatures = TRUE,
     n_populations = NULL,
-    genome = BSgenome.Hsapiens.UCSC.hg19,
+    genome = NULL,
     method = 'vb',
     n_chains = 10,
     n_cores = n_chains,
     n_iter = 300,
     n_adapt = 200
 ) {
+    if (is.null(genome)) {
+        genome = getBSgenome('BSgenome.Hsapiens.UCSC.hg19')
+    }
     mutation_table <- mutation_table %>%
         distinct() %>%
         mutate(

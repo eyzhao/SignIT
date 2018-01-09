@@ -29,10 +29,12 @@ all_snv_mutation_types <- function() {
 #' @return          Character vector of trinucleotide contexts
 #'
 #' @import BSgenome
-#' @import BSgenome.Hsapiens.UCSC.hg19
 #' @import dplyr
 
-get_trinucleotide <- function(chr, pos, ref, genome = BSgenome.Hsapiens.UCSC.hg19) {
+get_trinucleotide <- function(chr, pos, ref, genome = NULL) {
+    if (is.null(genome)) {
+        genome = getBSgenome('BSgenome.Hsapiens.UCSC.hg19')
+    }
     chr_levels <- chr %>% unique
     if (all(chr_levels %in% seqlevels(genome))) {
         message('Chromosome levels match. Proceeding...')
@@ -142,7 +144,10 @@ stitch_mutation_types <- function(substitution, trinucleotide) {
 #' @import dplyr
 #' @export
 
-get_snv_mutation_type <- function(chr, pos, ref, alt, genome = BSgenome.Hsapiens.UCSC.hg19) {
+get_snv_mutation_type <- function(chr, pos, ref, alt, genome = NULL) {
+    if (is.null(genome)) {
+        genome = getBSgenome('BSgenome.Hsapiens.UCSC.hg19')
+    }
     tibble(chr, pos, ref, alt) %>%
         mutate(
             trinucleotide_ = get_trinucleotide(chr, pos, ref, genome = genome),
