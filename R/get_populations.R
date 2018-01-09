@@ -65,19 +65,29 @@ get_populations <- function(
 
     message('Sampling')
 
-    if (method == 'mcmc') {
+    if (method == 'mcmc' || method == 'vb') {
 
-        stan_fit = sampling(
-            object = stan_dso,
-            data = stan_data,
-            chains = n_chains,
-            iter = n_iter + n_adapt,
-            warmup = n_adapt,
-            cores = n_cores,
-            init = function() {
-                list(mu = seq(0.1, 0.9, (0.9-0.1)/(stan_data$L-1)))
-            }
-        )
+        if (method == 'mcmc') {
+            stan_fit = sampling(
+                object = stan_dso,
+                data = stan_data,
+                chains = n_chains,
+                iter = n_iter + n_adapt,
+                warmup = n_adapt,
+                cores = n_cores,
+                init = function() {
+                    list(mu = seq(0.1, 0.9, (0.9-0.1)/(stan_data$L-1)))
+                }
+            )
+        } else {
+            stan_fit = vb(
+                object = stan_dso,
+                data = stan_data,
+                init = function() {
+                    list(mu = seq(0.1, 0.9, (0.9-0.1)/(stan_data$L-1)))
+                }
+            )
+        }
 
         parsed_output <- parse_stan_output(stan_fit)
         parameter_estimates <- get_population_parameter_estimates(parsed_output)
