@@ -5,8 +5,7 @@
 \title{Given chromosome, position, reference, and altered allele values, return a vector of
 SNV mutation types conforming to the standard 96-element mutation types.}
 \usage{
-get_snv_mutation_type(chr, pos, ref, alt,
-  genome = BSgenome.Hsapiens.UCSC.hg19)
+get_snv_mutation_type(chr, pos, ref, alt, genome = NULL)
 }
 \arguments{
 \item{chr}{Character vector of chromosomes (must match genome seqlevels)}

@@ -4,7 +4,8 @@
 \alias{plot_exposure_posteriors}
 \title{Plot the signature exposure posterior distributions}
 \usage{
-plot_exposure_posteriors(exposures_mcmc_output, view = "violin")
+plot_exposure_posteriors(exposures_mcmc_output, view = "violin",
+  signature_trim = "Signature")
 }
 \arguments{
 \item{exposures_mcmc_output}{Output from get_exposures.}

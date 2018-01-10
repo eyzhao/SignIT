@@ -4,7 +4,7 @@
 \alias{trim_signature_names}
 \title{Trims the names of mutation signatures}
 \usage{
-trim_signature_names(signature)
+trim_signature_names(signature, replace_string = "Signature")
 }
 \arguments{
 \item{signature}{A factor containing signature names.}

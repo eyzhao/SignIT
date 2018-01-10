@@ -5,9 +5,9 @@
 \title{SignIT-Pop inference of populations and signatures}
 \usage{
 get_population_signatures(mutation_table, reference_signatures = NULL,
-  subset_signatures = TRUE, n_populations = NULL,
-  genome = BSgenome.Hsapiens.UCSC.hg19, method = "vb", n_chains = 10,
-  n_cores = n_chains, n_iter = 300, n_adapt = 200)
+  subset_signatures = TRUE, n_populations = NULL, genome = NULL,
+  method = "vb", n_chains = 10, n_cores = n_chains, n_iter = 300,
+  n_adapt = 200)
 }
 \arguments{
 \item{mutation_table}{Table of mutations, one per row. The minimum input requires the 

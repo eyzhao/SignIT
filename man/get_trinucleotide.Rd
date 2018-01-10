@@ -4,7 +4,7 @@
 \alias{get_trinucleotide}
 \title{Gets the trinucleotide context for a set of genomic coordinates.}
 \usage{
-get_trinucleotide(chr, pos, ref, genome = BSgenome.Hsapiens.UCSC.hg19)
+get_trinucleotide(chr, pos, ref, genome = NULL)
 }
 \arguments{
 \item{chr}{Character vector of chromosome names. Must match provided genome.}

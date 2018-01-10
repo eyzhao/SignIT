@@ -6,7 +6,8 @@
 signature bleed interactions.}
 \usage{
 plot_exposure_posteriors_bleed(exposures_mcmc_output, view = "violin",
-  min_bleed = 0.2)
+  min_bleed = 0.2, signature_trim = "Signature", legend = TRUE,
+  plot_heights = c(1, 1))
 }
 \arguments{
 \item{exposures_mcmc_output}{Output from get_exposures.}

@@ -4,7 +4,7 @@
 \alias{plot_nnls_solution}
 \title{Plots a simple NNLS solution}
 \usage{
-plot_nnls_solution(exposures_mcmc_output)
+plot_nnls_solution(exposures_mcmc_output, signature_trim = "Signature")
 }
 \arguments{
 \item{exposures_mcmc_output}{}

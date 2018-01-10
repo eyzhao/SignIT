@@ -4,7 +4,7 @@
 \alias{plot_exposure_chain}
 \title{Plot the MCMC chains for the signature exposure solutions}
 \usage{
-plot_exposure_chain(exposures_mcmc_output)
+plot_exposure_chain(exposures_mcmc_output, signature_trim = "Signature")
 }
 \arguments{
 \item{exposures_mcmc_output}{Output from running plot_exposures}
