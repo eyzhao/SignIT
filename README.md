@@ -21,5 +21,3 @@ if (!require(devtools)) {
 }
 install_github("eyzhao/SignIT", recompile = TRUE, build_vignettes = FALSE)
 ```
-
-You can switch build_vignettes to TRUE but it takes a lot longer to install and the vignettes are already available from CRAN. If installation fails, please let us know by filing an issue.
