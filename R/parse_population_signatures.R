@@ -154,6 +154,7 @@ summarise_population_signatures <- function(joint_model_output) {
       population
     ) %>%
     mutate(
+      population_proportion = sum(mean),
       mean = mean / sum(mean),
       median = median / sum(median),
       mode = mode / sum(mode),
@@ -195,7 +196,7 @@ plot_population_signatures <- function(joint_model_output) {
       fill = population,
       colour = population
     )) +
-    geom_violin(position = 'dodge') +
+    geom_violin(position = position_dodge(width = 0.8)) +
     scale_colour_brewer(palette = 'Set1') +
     scale_fill_brewer(palette = 'Set1') +
     labs(x = 'Signature', y = 'Exposure Fraction', colour='Population', fill='Population') +
