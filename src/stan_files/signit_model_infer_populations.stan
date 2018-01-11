@@ -35,6 +35,7 @@ model {
   real pop_likelihood[N,L];         // Matrix of population likelihoods for each mutation
   real likelihood_sums[L, K, N];    // 
 
+  phi ~ dirichlet(rep_vector(1, L * K));
   kappa_minus_two ~ gamma(0.01, 0.01);
   mu_ordered ~ logistic(0, 1); // This is used instead of mu ~ beta(1, 1);
 

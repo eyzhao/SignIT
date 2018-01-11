@@ -82,6 +82,16 @@ get_population_signatures <- function(
     }
     mutation_table <- mutation_table %>%
         distinct() %>%
+        filter(
+            !is.na(chr),
+            !is.na(pos),
+            !is.na(ref),
+            !is.na(alt),
+            !is.na(total_depth),
+            !is.na(alt_depth),
+            !is.na(normal_copy),
+            !is.na(tumour_content)
+        ) %>%
         mutate(
             correction = get_vaf_correction(.)
         )
@@ -90,9 +100,14 @@ get_population_signatures <- function(
         message("Using pre-specified mutation types.")
     } else {
         mutation_table <- mutation_table %>%
+        mutate(
             mutation_type = get_snv_mutation_type(
                 chr, pos, ref, alt, genome
             )
+        ) %>%
+        filter(
+            ! grepl('N', mutation_type)
+        )
     } 
 
     n_mutations <- dim(mutation_table)[1]
@@ -103,10 +118,10 @@ get_population_signatures <- function(
 
     tumour_content <- mutation_table$tumour_content[1]
 
-    catalog <- mutation_table %>%
-        group_by(mutation_type) %>%
-        summarise(count = n()) %>%
-        ungroup()
+    catalog <- with(
+        mutation_table,
+        mutations_to_catalog(chr, pos, ref, alt)
+    )
 
     if (is.null(n_populations)) {
         message('No number of populations provided. Will run automatic model selection.')
@@ -138,7 +153,7 @@ get_population_signatures <- function(
     }
 
     message(sprintf(
-        'Running model with provided reference signatures: %s signatures, %s mutation types, and %s clusters',
+        'Running model with provided reference signatures: %s signatures, %s mutations, and %s clusters',
         reference_signatures %>% select(-mutation_type) %>% ncol,
         mutation_table %>% nrow,
         n_populations

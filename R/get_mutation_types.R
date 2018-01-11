@@ -157,3 +157,30 @@ get_snv_mutation_type <- function(chr, pos, ref, alt, genome = NULL) {
         mutate(mutation_type = collapse_mutation_types(mutation_type_)) %>%
         .$mutation_type
 }
+
+
+#' Given chromosome, position, reference, and altered allele values, returns a mutation catalog.
+#' Assumes SNV mutation types conforming to the standard 96-element mutation types.
+#'
+#' @param chr       Character vector of chromosomes (must match genome seqlevels)
+#' @param pos       Integer vector of mutation positions
+#' @param ref       Character vector of reference alleles (A, C, G, or T)
+#' @param alt       Character vector of mutated alleles (A, C, G, or T)
+#' @param genome    BSgenome object from which to derive trinucleotide context sequences
+#' @return          Data frame with columns mutation_type and count
+#'
+#' @import tibble
+#' @import dplyr
+#' @export
+
+mutations_to_catalog <- function(chr, pos, ref, alt, genome=NULL) {
+    tibble(chr, pos, ref, alt) %>%
+        mutate(
+            mutation_type = get_snv_mutation_type(chr, pos, ref, alt, genome)
+        ) %>%
+        group_by(mutation_type) %>%
+        summarise(count = n()) %>%
+        ungroup() %>%
+        right_join(tibble(mutation_type = all_snv_mutation_types()), by = 'mutation_type') %>%
+        replace_na(list(count = 0))
+}

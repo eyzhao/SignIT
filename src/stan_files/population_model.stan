@@ -27,6 +27,7 @@ model {
   matrix[L,N] likelihood_sums;
   row_vector[N] likelihood_colsums;
 
+  clone_prop ~ dirichlet(rep_vector(1, L));
   kappa_minus_two ~ gamma(0.01, 0.01);
   mu_ordered ~ logistic(0, 1); // This is used instead of mu ~ beta(1, 1);
 
