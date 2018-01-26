@@ -354,7 +354,7 @@ compute_population_signatures_bic <- function(mcmc_output) {
 #'
 #' @return WAIC value
 
-compute_population_signatures_waic <- function(mcmc_output) {
+compute_population_signatures_waic <- function(mcmc_output, parallel = FALSE, n_cores = 1) {
     signature_names <- mcmc_output$reference_signatures %>% select(-mutation_type) %>% colnames
     n_populations <- mcmc_output$n_populations
 
@@ -400,6 +400,12 @@ compute_population_signatures_waic <- function(mcmc_output) {
         mutation_type_probability = mutation_type_probability / sum(mutation_type_probability)
       )
 
+
+    if (parallel) {
+        n_cores <- min(detectCores() - 1, n_cores)
+        registerDoParallel(n_cores)
+    }
+
     waic_table <- mcmc_output$mutation_table %>%
       select(
         alt_depth, total_depth, correction, mutation_type
@@ -430,7 +436,7 @@ compute_population_signatures_waic <- function(mcmc_output) {
           log_mean_likelihood = log(mean(likelihoods)),
           var_log_likelihood = var(log(likelihoods))
         ))
-      }) %>%
+      }, .parallel = parallel) %>%
       summarise(
         lppd = sum(log_mean_likelihood),
         p = sum(var_log_likelihood)

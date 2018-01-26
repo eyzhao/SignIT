@@ -136,11 +136,6 @@ get_population_signatures <- function(
         message(sprintf('Extracting parameters from population model with %s populations', n_populations))
 
         n_population_selection <- NULL
-        population_mcmc <- get_population(mutation_table, n_populations)
-        mu <- population_mcmc$parameter_estimates$mu
-        kappa <- population_mcmc$parameter_estimates$kappa
-
-        message('Done extracting population parameters.')
     }
 
     if (is.null(reference_signatures)) {
