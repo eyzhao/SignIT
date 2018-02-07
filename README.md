@@ -22,6 +22,16 @@ if (!require(devtools)) {
 install_github("eyzhao/SignIT", recompile = TRUE, build_vignettes = FALSE)
 ```
 
+A common error in `install_github` is 
+
+```
+Downloading GitHub repo eyzhao/SignIT@master
+from URL https://api.github.com/repos/eyzhao/SignIT/zipball/master
+Installation failed: error in running command
+```
+
+If this happens, try executing `options(unzip = 'internal')` and try again.
+
 ### Setting up R and Necessary Dependencies
 
 A convenient way to set up a standalone installation of R with SignIT is to use an Anaconda environment. In a Bash shell, the following commands will check out such an environment and install it locally.
