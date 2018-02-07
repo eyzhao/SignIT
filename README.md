@@ -21,3 +21,21 @@ if (!require(devtools)) {
 }
 install_github("eyzhao/SignIT", recompile = TRUE, build_vignettes = FALSE)
 ```
+
+### Setting up R and Necessary Dependencies
+
+A convenient way to set up a standalone installation of R with SignIT is to use an Anaconda environment. In a Bash shell, the following commands will check out such an environment and install it locally.
+
+```{bash}
+git clone https://github.com/eyzhao/bio-pipeline-dependencies.git
+cd bio-pipeline-dependencies
+git checkout tags/SignIT-paper-dependencies
+make
+```
+
+After this is complete, run the following command to activate the environment and run R.
+
+```{bash}
+source miniconda3/bin/activate dependencies
+R
+```
