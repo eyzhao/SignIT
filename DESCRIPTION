@@ -8,6 +8,6 @@ Maintainer: Eric Y. Zhao <eric@eyzhao.com>
 Description: Infers mutation signatures using a Bayesian hierarchical model. Also jointly infers temporally distinct tumour subpopulations alongside their signatures.
 License: GNU General Public License v3.0
 Depends: R (>= 3.3.0), Rcpp (>= 0.12.10), methods
-Imports: rstan (>= 2.15.2), rstantools (>= 1.4.0), BSgenome (>= 1.44.2), cowplot (>= 0.8.0), doParallel (>= 1.0.10), plyr (>= 1.8.4), dplyr (>= 0.7.4), foreach (>= 1.4.3), ggplot2 (>= 2.2.1), ggraph (>= 1.0.0), igraph (>= 1.0.1), magrittr (>= 1.5), nnls (>= 1.4), readr (>= 1.1.0), tibble (>= 1.3.4), tidyr (>= 0.6.1)
+Imports: rstan (>= 2.15.2), rstantools (>= 1.4.0), BSgenome (>= 1.44.2), cowplot (>= 0.8.0), doParallel (>= 1.0.10), plyr (>= 1.8.4), dplyr (>= 0.7.4), foreach (>= 1.4.3), ggplot2 (>= 2.2.1), ggraph (>= 1.0.0), igraph (>= 1.0.1), magrittr (>= 1.5), nnls (>= 1.4), readr (>= 1.1.0), tibble (>= 1.3.4), tidyr (>= 0.6.1), rmutil (>= 1.1.0)
 LinkingTo: StanHeaders (>= 2.15.0), rstan (>= 2.15.0), BH (>= 1.55.0.1), Rcpp (>= 0.12.10), RcppEigen (>= 0.3.3.3.1)
 RoxygenNote: 6.0.1
