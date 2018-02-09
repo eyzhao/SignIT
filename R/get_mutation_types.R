@@ -146,6 +146,7 @@ stitch_mutation_types <- function(substitution, trinucleotide) {
 
 get_snv_mutation_type <- function(chr, pos, ref, alt, genome = NULL) {
     if (is.null(genome)) {
+        message('No BSgenome object provided. Using default: BSgenome.Hsapiens.UCSC.hg19')
         genome = getBSgenome('BSgenome.Hsapiens.UCSC.hg19')
     }
     tibble(chr, pos, ref, alt) %>%

@@ -12,6 +12,12 @@ source("https://bioconductor.org/biocLite.R")
 biocLite('BSgenome')
 ```
 
+You may also need to install specific cancer genomes to fit your need. For example:
+
+```{r}
+biocLite("BSgenome.Hsapiens.UCSC.hg19")
+```
+
 Once rstan and BSgenome are successfully installed, you can install SignIT from GitHub using the devtools package by executing the following in R:
 
 ```{r}

@@ -1,32 +1,33 @@
 ---
 title: "SignIT Vignette"
 author: "Eric Zhao"
-date: "September 20, 2017"
+date: "Feb 9, 2017"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, fig.path = 'figures/', dev = c('png'), dpi = 300)
 
-library(devtools)
-load_all('/projects/ezhao_prj/papers/SignIT-paper/analysis/scripts/SignIT')
+library(signit)
 library(nnls)
-library(dbscan)
 library(tidyverse)
 library(rstan)
-library(Rtsne)
 library(cowplot)
+library(hexbin)
+library(ggraph)
 ```
 
 # SignIT: Mutation Signature Analysis in Individual Tumours with MCMC
+
+This vignette demonstrates the use of SignIT to decipher mutation signatures in individual tumours, explore signature bleed interactions, and perform temporal dissection of mutation signatures. SignIT is available for download and installation from https://www.github.com/eyzhao/SignIT. See installation instructions in the README.
+
+## Background
 
 Cancer is a disease characterized by the formation of tumours composed of cells which divide aggressively due to the loss of specialized functions and growth inhibition. Cancers arise due to the stepwise accumulation of spontaneous genetic mutations specific to the tumour, also known as somatic mutations. These mutations arise from many causes, including chemical mutagens, intracellular mutational processes, and deficient DNA repair genes. 
 
 While some mutations may contribute directly to tumour invasiveness, the majority are thought to be "passengers," with minimal impact on the evolutionary fitness of cancer cells. Nevertheless, it is possible to glean insights about a cancer's molecular history from these passengers. They provide evidence of the mutational processes which drove the acquisition of mutations in cancer.
 
-Recent research has described characteristic signatures of mutation deciphered from cancer whole genome and exome sequences.
-
-This vignette demonstrates the use of SignIT to decipher mutation signatures in individual tumours and explore the solution space using Markov Chain Monte Carlo techniques.
+Recent research has compiled 30 characteristic signatures of mutation deciphered from cancer whole genome and exome sequences. These are available from http://cancer.sanger.ac.uk/cosmic/signatures.
 
 # SignIT on a Patient's Mutation Catalog
 
@@ -34,19 +35,36 @@ This vignette demonstrates the use of SignIT to decipher mutation signatures in 
 
 A mutation catalog is a Data Frame or Tibble containing two columns named mutation_type and count. The mutation_type column is a vector of unique strings each denoting a mutation type. It is possible to define custom mutation types, so long as they match the mutation types defined in a reference mutation signature table.
 
+An example mutation catalog is provided in the package data.
+
 ```{r patient_mutation_catalog}
 data(example_catalog)
+print(example_catalog)
+```
+
+SignIT also provides tools to determine SNV mutation catalogs from a table of variants. SignIT also provides example data of a variant table.
+
+```{r variant_table_to_catalog}
+data(example_variants)
+
+print(example_variants)
+
+example_catalog_2 <- with(
+  example_variants,
+  signit:::mutations_to_catalog(chr, pos, ref, alt)
+)
+
+print(example_catalog_2)
 ```
 
 ## Running MCMC Analysis and Exploring Posterior Distributions
 
 Once a mutation catalog is available, obtaining the contributions of each mutation signature (also known as the exposures) is straightforward. The following line of code initializes the Bayesian model which analyzes mutation signatures and stores the output into a list structure.
 
-By default, the analysis runs 4 chains in parallel, with 10 000 iterations per chain. However, for the purposes of this vignette, we will use only 2000 iterations per chain. This will help to lessen the runtime of this and later analyses for demonstration purposes.
-
 ```{r patient_mcmc_run}
 patient_signature_exposures <- get_exposures(
   mutation_catalog = example_catalog,
+  n_cores = 1
 )
 ```
 
@@ -64,166 +82,108 @@ patient_exposure_nnls_plot <- plot_nnls_solution(patient_signature_exposures)
 print(patient_exposure_nnls_plot)
 ```
 
-***Write some observations here about the differences observed.***
+Note how NNLS provides point estimates which mirror SignIT's solutions, but that uncertainties vary greatly between signatures. Additionally, nnls manifests mutation bleed as inappropriate elevation of signatures 16, 22, and 25.
 
-***Write functions which provide quantitative summary statistics about the exposures MCMC output***.
 
-# Density-based clustering of MCMC output
+## Visualizing Mutation Signature Bleed
 
-To mitigate overfitting mutation signatures in an individual tumour scenario, it is important to consider good alternative solutions which may or may not differ from the ideal point estimate determined by NNLS. Consider the following scenario. A tumour has a high contribution from Signature 3. However, Signature 3 and Signature 8 share some similarities in their mutation profiles. While the ideal solution may have a high Signature 3 and low Signature 8, an alternative solution with high Signature 8 and low Signature 3 may be nearly as good a fit.
+Signal bleed can often occur between signatures with similar mutational spectra. The result is that these signatures exhibit anticorrelated posterior sampling, suggesting that credible solutions can fit either signature. To visualize this anticorrelation, we can use the following command:
 
-In order to account for such solutions, we need to explore the density landscape of the 30-dimensional MCMC solution space for local optima. To do this, SignIT performs density-based clustering using the HDBSCAN algorithm. It then provides tools to explore the best-fit and highest-density regions within each solution cluster.
-
-HDBSCAN accepts a parameter named minPts, which stands for minimum points. The higher this parameter, the fewer clusters will form and the more outlier points there will be. While SignIT uses a default minPts of 40, this parameter can be adjusted depending on the needs of your specific dataset.
-
-The following command performs density clustering. Note that this step can place high demands on processor and memory resources, and may take a significant amount of time. For longer MCMC chains, it is recommended that this step is run on a high performance computing server.
-
-```{r density_based_clustering, fig.height = 8, fig.width = 8}
-patient_density_clustering <- density_clustering(patient_signature_exposures, minPts = 40)
-print(patient_density_clustering)
+```{r signature_bleed_hexplot, fig.height = 4, fig.width = 5}
+plot_two_signature_hexplot(patient_signature_exposures, 'Signature 3', 'Signature 8')
 ```
 
-## Visualizing High-Dimensional Clusters with t-SNE
+We can also simultaneously quantify the signature bleed across all signatures and plot it as a heatmap. Signatures with more negative Spearman Rho (dark blue) exhibit more signature bleed.
 
-It is always handy to be visualize the high dimensional solution space to try and understand the structure of data and verify the accuracy of density clustering. Because the MCMC solutions exist in 30-dimensional space, however, it is necessary to dimensionally reduce the solutions down to 2 dimensions for visualization. The t-SNE algorithm is especially well suited to such a task. The following function produces a visualization of the exposures MCMC chain along two projected t-SNE dimensions. Points are coloured according to the cluster they were assigned to by density clustering in 30-dimensional space.
-
-This visualization allows for verification that the data clusters along sensible borders and is not over-clustered or under-clustered.
-
-Please note that this figure can take a long time to generate. We will generate three tsne graphs at different perplexities.
-
-```{r patient_mcmc_tsne_perplexity_10}
-plot_density_tsne(patient_signature_exposures, patient_density_clustering, perplexity = 10)
-```
-
-
-## Exploring Alternative Mutation Signature Solutions
-
-SignIT provides a number of ways to explore optimal solutions within density clusters. The following method locates the solution within each cluster which minimizes the residual sum of squares, and thus provides the "best fit" to the data. Solutions are visualized as line graphs to show related changes in different signatures.
-
-```{r density_clustering_best_fit_plot, fig.height = 2, fig.width = 8}
-best_fit_cluster_solutions_plot <- plot_cluster_solutions(patient_signature_exposures, patient_density_clustering, method = 'bestfit')
-print(best_fit_cluster_solutions_plot)
-```
-
-Alternatively, the following solution identifies the "most dense" point per cluster by computing the mean distance to k neighbouring points. The k-value can be set via a parameter, and defaults to 400.
-
-```{r density_clustering_max_densit_plot, fig.width = 8, fig.height = 2}
-most_dense_cluster_solutions_plot <- plot_cluster_solutions(patient_signature_exposures, patient_density_clustering, method = 'mostdense', k_value = 400)
-print(most_dense_cluster_solutions_plot)
-```
-
-To concisely examine the clusters resulting from density clustering, the following function plots a scatterplot showing the minimum residual sum of squares versus the cluster score for each cluster. Better solutions should aim to minimize RSS, but more stable clusters should have a higher cluster score. Ideal solutions should therefore be in the bottom-right of this plot.
-
-***Show naive NNLS solution as part of this plot***
-
-***Replace the points with text labels showing the cluster number?***
-
-```{r cluster_error_plot, fig.width = 5, fig.height = 4}
-cluster_error_plot <- plot_cluster_solution_errors(patient_signature_exposures, patient_density_clustering)
-print(cluster_error_plot)
-```
-
-For comparison's sake, here are the various plots of solutions from above in a single grid.
-
-```{r multiple_exposure_plots, fig.height = 8, fig.width = 8}
-plot_grid(
-  best_fit_cluster_solutions_plot + theme(legend.position = 'none') + labs(title = 'Solutions of each cluster (by lowest RSS)'),
-  most_dense_cluster_solutions_plot + theme(legend.position = 'none') + labs(title = 'Solutions of each cluster (by highest density region)'),
-  patient_exposure_nnls_plot + labs(title = 'Naive NNLS solution'),
-  patient_exposure_posterior_plot + labs(title = 'Posteriors of the complete MCMC solution'),
-  ncol = 1, align = 'v', 
-  labels = c('A', 'B', 'C', 'D')
-  )
-```
-
-## Examining Signature Bleed
-
-The previously described reciprocal interaction between Signature 3 and Signature 8 is referred to as "signature bleed". The similarity between these signatures results in instability of possible solutions. Bleed can be identified by an inverse correlation between the two signatures in the MCMC solution chain. The following method visualizes the projection of MCMC solutions onto the Signature 3 - Signature 8 plane.
-
-```{r signature_bleed_plot, fig.height = 5, fig.width = 6}
-plot_two_signature_hexplot(patient_signature_exposures, 'Signature 3', 'Signature 8', patient_density_clustering, trendline = FALSE)
-```
-
-By computing pairwise Spearman correlations for each signature pair, we can observe which signatures have anti-correlated exposure posterior distributions. The blue squares below indicate some degree of bleed between signatures.
-
-```{r signature_bleed_pairwise, fig.height = 5.5, fig.width = 7}
+```{r signature_bleed_heatmap, fig.height = 6, fig.width = 8}
 plot_signature_pairwise_bleed(patient_signature_exposures)
 ```
 
-***Create function to example signature bleed across the full structure of MCMC space, perhaps in a multivariate manner.***
+Lastly, SignIT provides a convenient visualization which overlays mutation signature bleed information on top of signature posteriors. The `min_bleed` parameter takes on values from 0 to 1. The higher this threshold is set, the cleaner the graph will look, but the more information is lost. We typically recommend values around 0.2 to 0.3.
 
-# SignIT on a Simulated Mutation Catalog
-
-In order to further illustrate the components of SignIT analysis, this next portion will simulate a catalog of somatic mutations.
-
-In this vignette, we will demonstrate using the 30 reference mutation signatures defined on the [COSMIC](http://cancer.sanger.ac.uk/cosmic/signatures) website. The corresponding matrix of mutation signature probabilities can be downloaded [here](http://cancer.sanger.ac.uk/cancergenome/assets/signatures_probabilities.txt). This dataset is built into SignIT and can be accessed via the get_reference_signatures method.
-
-```{r get_reference_signatures}
-reference_signatures <- get_reference_signatures()
-print(reference_signatures)
+```{r plot_exposures_with_bleed, fig.width = 8 , fig.height = 6}
+plot_exposure_posteriors_bleed(patient_signature_exposures, min_bleed = 0.25)
 ```
 
-In order to simulate a mutation catalog, we need to multiply the reference signature matrix with a vector of signature exposures, which indicates the number of mutations contributed by each mutational process. For simplicity, we will simulate a catalog with only contributions from Signature 3.
+For a quantitative summary of signature exposures, use the following command
 
-```{r mutation_simulation_setup}
-reference_signature_matrix <- reference_signatures_as_matrix(reference_signatures, mutation_catalog = reference_signatures)
-
-simulated_exposure <- c(
-  rep(0, 2),
-  1000,
-  rep(0, 27)
-)
-
-n_mutations <- sum(simulated_exposure)
-
-catalog_probability_vector <- reference_signature_matrix %*% simulated_exposure / n_mutations
+```{r signature_summary}
+print(get_exposure_summary_table(patient_signature_exposures))
 ```
 
-To perform the actual simulation, we draw mutations from a multinomial distribution.
 
-```{r simulate_catalogs}
-simulated_catalog <- tibble(
-  mutation_type = reference_signatures[['mutation_type']],
-  count = rmultinom(
-    n = 1,
-    size = n_mutations,
-    prob = catalog_probability_vector
-    ) %>% as.numeric
-)
+# Structural Variant Signatures
 
-# Randomize the order to simulated catalog to test that functions are robust to reordering
-simulated_catalog <- simulated_catalog[sample(1:dim(simulated_catalog)[1], replace = FALSE), ]
-print(simulated_catalog)
+Mutation types are not fixed. As long as you provide a reference mutation signature matrix which matches the mutation types of your mutation catalog, you can decipher mutation signatures. We will briefly demonstrate an example using structural variant signatures.
+
+The structural variant reference signatures from [Nik-Zainal  et al. (2016)](https://www.nature.com/articles/nature17676) can be accessed as follows
+
+```{r sv_reference}
+sv_reference <- get_reference_signatures(signature_set = 'nikzainal_sv')
+print(sv_reference)
 ```
 
-get_exposures will automatically account for the ordering of mutation types. Note that we randomized the order of our catalog rows to demonstrate this. Next, we compute signature exposures using SignIT.
+We then use a mutation catalog with matching mutation types
 
-Again, we use 2000 iterations instead of the default 10 000 in order to minimize runtimes.
-
-```{r simulated_mutations_exposures}
-simulated_signature_exposures <- get_exposures(
-  mutation_catalog = simulated_catalog %>% mutate(count = as.integer(count)),
-  n_chains = 4,
-  n_iter = 10000
-)
-
-simulated_density_clustering <- density_clustering(simulated_signature_exposures, minPts = 40)
+```{r sv_catalog}
+data(example_sv_catalog)
+print(example_sv_catalog)
 ```
 
-We proceed now to generate the plots demonstrated previously. Notice how even in this example with pure simulated Signature 3, the naive NNLS solution reports signature exposures arising from other mutation signatures. It is likely overfitting to the noise introduced by drawing from a multinomial random variable. The SignIT posteriors, however, provide a much more reasonable guess of the true exposure fractions, although they still do underestimate the exposure of Signature 3 (the true value was 1000). Note the slightly overestimated posteriors of other signatures including Signature 8, revealing some signature bleed.
+Next, we perform SignIT analysis as before.
 
-```{r simulated_exposure_mcmc_chains, fig.height = 8, fig.width = 8}
-simulated_best_fit_plot <- plot_cluster_solutions(simulated_signature_exposures, simulated_density_clustering, method = 'bestfit')
-simulated_most_densest_region_plot <- plot_cluster_solutions(simulated_signature_exposures, simulated_density_clustering, method = 'mostdense', k_value = 400)
-simulated_exposure_nnls_plot <- plot_nnls_solution(simulated_signature_exposures)
-simulated_exposure_posteriors <- plot_exposure_posteriors(simulated_signature_exposures, view = 'violin')
+```{r sv_exposures}
+sv_exposures <- get_exposures(example_sv_catalog, reference_signatures = sv_reference, n_cores = 1)
+```
 
-plot_grid(
-  simulated_best_fit_plot + theme(legend.position = 'none') + labs(title = 'Solutions of each cluster (by lowest RSS)'),
-  simulated_most_densest_region_plot + theme(legend.position = 'none') + labs(title = 'Solutions of each cluster (by highest density region)'),
-  simulated_exposure_nnls_plot + labs(title = 'Naive NNLS solution'),
-  simulated_exposure_posteriors + labs(title = 'Posteriors of the complete MCMC solution'),
-  ncol = 1, align = 'v', 
-  labels = c('A', 'B', 'C', 'D')
-  )
+And we can use the same plotting functions,
+
+```{r plot_sv_exposures, fig.width = 4, fig.height = 8}
+plot_exposure_posteriors_bleed(sv_exposures, signature_trim = 'Rearrangement Signature')
+```
+
+And the same summarization function
+
+```{r summarise_sv_exposures}
+print(get_exposure_summary_table(sv_exposures))
+```
+
+# Temporally Dissecting Mutation Signatures
+
+We next explore how to perform temporal dissection of mutation signatures. The input data here is a data.frame or tibble of mutations, with some additional metadata. The following `glimpse` shows the necessary formatting of the input. Feel free to load `data(example_variants)` to see the complete input data for yourself.
+
+```{r population_signatures_input}
+glimpse(example_variants)
+```
+
+Signature timing is performed using `get_population_signatures`. Note that this process can take quite some time depending on your machine. We are using method = 'vb', which employs the variational Bayes solution and is much more computationally economical.
+
+Note that if the parameter `n_populations` is not provided, an automatic process of model selection is performed to attempt to estimate the optimal number of signatures.
+
+A preferred approach (if computational resources are available) is to perform complete population signature inference for five models: 1-5 populations. Then, compute the WAIC of each model with `compute_population_signatures_waic(population_signatures)` and choose the model which minimizes it. WAIC is a preferred model selection metric for Bayesian inference.
+
+```{r get_population_signatures}
+#population_signatures <- get_population_signatures(
+#  example_variants,
+#  n_populations = 2,
+#  method = 'vb'
+#)
+
+population_signatures <- readRDS('../../../meta/mutation_timing/signit_pop_cases/POG042/biop1_t_P00019_blood1_n_P00018/signit_pop_output/2_populations.Rds')$stan_obj
+```
+
+Now, let's visualize the results.
+
+```{r population_signatures_visualization}
+plot_population_signatures(population_signatures)
+```
+
+This analysis is revealing two tumour subpopulations. The red higher-prevalence subpopulation is inferred to be "earlier". The Proportion refers to the fraction of mutations contributed from each subpopulation.
+
+We see here that Signature 3 exhibits early bias while signatures 16, 17, and 30 have late bias.
+
+For quantitative analysis workflows, use the following to provide a summary of these results:
+
+```{r population_signature_summary}
+print(summarise_population_signatures(population_signatures))
 ```

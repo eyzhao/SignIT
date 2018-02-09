@@ -353,6 +353,7 @@ compute_population_signatures_bic <- function(mcmc_output) {
 #' @param population_mcmc_output    Output from \code{\link{get_population_signatures}}.
 #'
 #' @return WAIC value
+#' @export
 
 compute_population_signatures_waic <- function(mcmc_output, parallel = FALSE, n_cores = 1) {
     signature_names <- mcmc_output$reference_signatures %>% select(-mutation_type) %>% colnames
