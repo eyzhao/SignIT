@@ -353,95 +353,11 @@ compute_population_signatures_bic <- function(mcmc_output) {
 #' @param population_mcmc_output    Output from \code{\link{get_population_signatures}}.
 #'
 #' @return WAIC value
+#'
+#' @import loo
 #' @export
 
 compute_population_signatures_waic <- function(mcmc_output, parallel = FALSE, n_cores = 1) {
-    signature_names <- mcmc_output$reference_signatures %>% select(-mutation_type) %>% colnames
-    n_populations <- mcmc_output$n_populations
-
-    parsed_output <- mcmc_output$mcmc_output %>%
-      parse_stan_output()
-
-    phi_chain <- parsed_output %>%
-      filter(parameter_name == 'phi') %>%
-      mutate(
-        population = map_phi_to_population(parameter_index, signature_names, n_populations),
-        signature = map_phi_to_signature(parameter_index, signature_names)
-      ) %>%
-      rename(
-        phi = value,
-        phi_index = parameter_index
-      ) %>%
-      select(-parameter_name)
-
-    mu_chain <- parsed_output %>%
-      filter(parameter_name == 'mu') %>%
-      select(
-        iteration,
-        chain,
-        mu = value,
-        population = parameter_index
-      )
-
-    kappa_chain <- parsed_output %>%
-      filter(parameter_name == 'kappa_minus_two') %>%
-      mutate(
-        kappa = value + 2
-      ) %>%
-      select(iteration, chain, kappa)
-
-    chain <- phi_chain %>%
-      left_join(mu_chain, by = c('chain', 'iteration', 'population')) %>%
-      left_join(kappa_chain, by = c('chain', 'iteration'))
-
-    ref_signatures_long <- mcmc_output$reference_signatures %>% 
-      gather(signature, mutation_type_probability, -mutation_type) %>% 
-      group_by(signature) %>% 
-      mutate(
-        mutation_type_probability = mutation_type_probability / sum(mutation_type_probability)
-      )
-
-
-    if (parallel) {
-        n_cores <- min(detectCores() - 1, n_cores)
-        registerDoParallel(n_cores)
-    }
-
-    waic_table <- mcmc_output$mutation_table %>%
-      select(
-        alt_depth, total_depth, correction, mutation_type
-      ) %>%
-      mutate(mutation_idx = row_number()) %>%
-      plyr::ddply('mutation_idx', function(mutation) {
-        likelihoods <- mutation %>%
-          crossing(chain) %>%
-          left_join(ref_signatures_long, by = c('mutation_type', 'signature')) %>%
-          mutate(
-            population_likelihood = rmutil::dbetabinom(
-              alt_depth, 
-              total_depth, 
-              correction * mu, 
-              kappa
-            ),
-            signature_likelihood = mutation_type_probability,
-            likelihood = population_likelihood * signature_likelihood
-          ) %>%
-          group_by(mutation_idx, chain, iteration) %>%
-          summarise(
-            likelihood = sum(phi * likelihood)
-          ) %>%
-          ungroup() %>% 
-          .$likelihood
-        
-        return(tibble(
-          log_mean_likelihood = log(mean(likelihoods)),
-          var_log_likelihood = var(log(likelihoods))
-        ))
-      }, .parallel = parallel) %>%
-      summarise(
-        lppd = sum(log_mean_likelihood),
-        p = sum(var_log_likelihood)
-      )
-
-    return(-2 * (waic_table$lppd - waic_table$p))
+    log_lik <- extract_log_lik(mcmc_output$mcmc_output)
+    return(waic(log_lik)$waic)
 }

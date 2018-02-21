@@ -1,6 +1,10 @@
 # SignIT
 Mutation Signatures in Individual Tumours
 
+## Tutorial
+
+Installation instructions are below. For a tutorial on SignIT, please see the [Vignette](https://eyzhao.github.io/SignIT/vignette.html).
+
 ## Installation
 
 ### Development Version

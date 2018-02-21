@@ -2,7 +2,10 @@
 title: "SignIT Vignette"
 author: "Eric Zhao"
 date: "Feb 9, 2017"
-output: html_document
+output:
+  prettydoc::html_pretty:
+    theme: tactile
+    highlight: github
 ---
 
 ```{r setup, include=FALSE}
@@ -15,6 +18,11 @@ library(rstan)
 library(cowplot)
 library(hexbin)
 library(ggraph)
+
+library(pander)
+panderOptions('table.style', 'rmarkdown')
+panderOptions('table.split.table', 1000)
+panderOptions('digits', 3)
 ```
 
 # SignIT: Mutation Signature Analysis in Individual Tumours with MCMC
@@ -39,22 +47,25 @@ An example mutation catalog is provided in the package data.
 
 ```{r patient_mutation_catalog}
 data(example_catalog)
-print(example_catalog)
+pander(head(example_catalog))
 ```
 
-SignIT also provides tools to determine SNV mutation catalogs from a table of variants. SignIT also provides example data of a variant table.
+SignIT also provides tools to determine SNV mutation catalogs from a table of variants. Here are the first ten rows of a set of example variants. You can load this data from SignIT to see the full set.
 
-```{r variant_table_to_catalog}
+```{r variant_table_load}
 data(example_variants)
+pander(head(example_variants, 10))
+```
 
-print(example_variants)
+Use `mutations_to_catalog` to convert to catalog form.
 
+```{r variant_table_to_catalog, message = F}
 example_catalog_2 <- with(
   example_variants,
-  signit:::mutations_to_catalog(chr, pos, ref, alt)
+  mutations_to_catalog(chr, pos, ref, alt)
 )
 
-print(example_catalog_2)
+pander(head(example_catalog_2))
 ```
 
 ## Running MCMC Analysis and Exploring Posterior Distributions
@@ -108,7 +119,8 @@ plot_exposure_posteriors_bleed(patient_signature_exposures, min_bleed = 0.25)
 For a quantitative summary of signature exposures, use the following command
 
 ```{r signature_summary}
-print(get_exposure_summary_table(patient_signature_exposures))
+summary_table <- get_exposure_summary_table(patient_signature_exposures)
+pander(summary_table)
 ```
 
 
@@ -120,14 +132,14 @@ The structural variant reference signatures from [Nik-Zainal  et al. (2016)](htt
 
 ```{r sv_reference}
 sv_reference <- get_reference_signatures(signature_set = 'nikzainal_sv')
-print(sv_reference)
+pander(head(sv_reference))
 ```
 
 We then use a mutation catalog with matching mutation types
 
 ```{r sv_catalog}
 data(example_sv_catalog)
-print(example_sv_catalog)
+pander(example_sv_catalog)
 ```
 
 Next, we perform SignIT analysis as before.
@@ -145,7 +157,7 @@ plot_exposure_posteriors_bleed(sv_exposures, signature_trim = 'Rearrangement Sig
 And the same summarization function
 
 ```{r summarise_sv_exposures}
-print(get_exposure_summary_table(sv_exposures))
+pander(get_exposure_summary_table(sv_exposures))
 ```
 
 # Temporally Dissecting Mutation Signatures
@@ -162,14 +174,12 @@ Note that if the parameter `n_populations` is not provided, an automatic process
 
 A preferred approach (if computational resources are available) is to perform complete population signature inference for five models: 1-5 populations. Then, compute the WAIC of each model with `compute_population_signatures_waic(population_signatures)` and choose the model which minimizes it. WAIC is a preferred model selection metric for Bayesian inference.
 
-```{r get_population_signatures}
-#population_signatures <- get_population_signatures(
-#  example_variants,
-#  n_populations = 2,
-#  method = 'vb'
-#)
-
-population_signatures <- readRDS('../../../meta/mutation_timing/signit_pop_cases/POG042/biop1_t_P00019_blood1_n_P00018/signit_pop_output/2_populations.Rds')$stan_obj
+```{r get_population_signatures, cache = T}
+population_signatures <- get_population_signatures(
+  example_variants,
+  n_populations = 2,
+  method = 'vb'
+)
 ```
 
 Now, let's visualize the results.
@@ -185,5 +195,13 @@ We see here that Signature 3 exhibits early bias while signatures 16, 17, and 30
 For quantitative analysis workflows, use the following to provide a summary of these results:
 
 ```{r population_signature_summary}
-print(summarise_population_signatures(population_signatures))
+pander(summarise_population_signatures(population_signatures))
+```
+
+# Session Info
+
+The below output specifies the packages used in this analysis, and their version numbers.
+
+```{r session_info}
+print(sessionInfo())
 ```

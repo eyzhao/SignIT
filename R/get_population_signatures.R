@@ -151,6 +151,8 @@ get_population_signatures <- function(
         reference_signatures <- subset_reference_signatures(catalog, reference_signatures, n_cores = n_cores)
     }
 
+    reference_signatures <- normalize_reference_signatures(reference_signatures)
+
     message(sprintf(
         'Running model with provided reference signatures: %s signatures, %s mutations, and %s clusters',
         reference_signatures %>% select(-mutation_type) %>% ncol,

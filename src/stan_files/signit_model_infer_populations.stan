@@ -1,3 +1,50 @@
+functions {
+  real compute_log_likelihood(
+    int N, int L, int K, int[] x, int[] d, vector a, vector mu, real kappa_minus_two, int[] v, matrix ref_signatures, vector phi
+  ) {
+    real alpha[N,L];       // beta-binomial: alpha = mu * kappa
+    real beta[N,L];        // beta-binomial: beta = (1 - mu) * kappa
+                           // Note that mu values are first adjusted by a values for each mutation
+
+    real sig_likelihood[N,K];         // Matrix of signature likelihoods for each mutation
+    real pop_likelihood[N,L];         // Matrix of population likelihoods for each mutation
+    real likelihood_sums[L, K, N];    // 
+    int idx;                          // mapping l and k indices to corresponding coefficient of phi
+    real log_likelihood;
+
+    alpha = to_array_2d((a * to_row_vector(mu)) * (kappa_minus_two + 2));
+    beta = to_array_2d((1 - (a * to_row_vector(mu))) * (kappa_minus_two + 2));
+
+    for (n in 1:N) {
+      for (l in 1:L) {
+        pop_likelihood[n,l] = beta_binomial_lpmf(x[n] | d[n], alpha[n,l], beta[n,l]);
+      }
+    }
+
+    for (n in 1:N) {
+      for (k in 1:K) {
+        sig_likelihood[n,k] = categorical_lpmf(v[n] | to_vector(ref_signatures[k]));
+      }
+    }
+
+    for (l in 1:L) {
+      for (k in 1:K) {
+        idx = ((l-1) * K) + k;
+        likelihood_sums[l, k, :] = to_array_1d(log(phi[idx]) + to_vector(pop_likelihood[:,l]) + to_vector(sig_likelihood[:,k]));
+      }
+    }
+
+    likelihood_sums = exp(likelihood_sums);
+
+    log_likelihood = 0;
+    for (n in 1:N) {
+      log_likelihood += log(sum(to_array_1d(likelihood_sums[:, :, n])));
+    }
+
+    return log_likelihood;
+  }
+}
+
 data {
   int<lower=1> N;                   // number of mutations
 
@@ -26,45 +73,20 @@ transformed parameters {
 }
 
 model {
-  real alpha[N,L];       // beta-binomial: alpha = mu * kappa
-  real beta[N,L];        // beta-binomial: beta = (1 - mu) * kappa
-                            // Note that mu values are first adjusted by a values for each mutation
-
-  int idx;                          // mapping l and k indices to corresponding coefficient of phi
-  real sig_likelihood[N,K];         // Matrix of signature likelihoods for each mutation
-  real pop_likelihood[N,L];         // Matrix of population likelihoods for each mutation
-  real likelihood_sums[L, K, N];    // 
+  real log_lik;
 
   phi ~ dirichlet(rep_vector(1, L * K));
   kappa_minus_two ~ gamma(0.01, 0.01);
   mu_ordered ~ logistic(0, 1); // This is used instead of mu ~ beta(1, 1);
 
-  alpha = to_array_2d((a * to_row_vector(mu)) * (kappa_minus_two + 2));
-  beta = to_array_2d((1 - (a * to_row_vector(mu))) * (kappa_minus_two + 2));
+  log_lik = compute_log_likelihood(N, L, K, x, d, a, mu, kappa_minus_two, v, ref_signatures, phi);
 
-  for (n in 1:N) {
-    for (l in 1:L) {
-      pop_likelihood[n,l] = beta_binomial_lpmf(x[n] | d[n], alpha[n,l], beta[n,l]);
-    }
-  }
+  target += log_lik;
+}
 
-  for (n in 1:N) {
-    for (k in 1:K) {
-      sig_likelihood[n,k] = categorical_lpmf(v[n] | to_vector(ref_signatures[k]));
-    }
-  }
+generated quantities {
+  real log_lik;
 
-  for (l in 1:L) {
-    for (k in 1:K) {
-      idx = ((l-1) * K) + k;
-      likelihood_sums[l, k, :] = to_array_1d(log(phi[idx]) + to_vector(pop_likelihood[:,l]) + to_vector(sig_likelihood[:,k]));
-    }
-  }
-
-  likelihood_sums = exp(likelihood_sums);
-
-  for (n in 1:N) {
-    target += log(sum(to_array_1d(likelihood_sums[:, :, n])));
-  }
+  log_lik = compute_log_likelihood(N, L, K, x, d, a, mu, kappa_minus_two, v, ref_signatures, phi);
 }
 
