@@ -73,10 +73,14 @@ get_population_signatures <- function(
     genome = NULL,
     method = 'vb',
     n_chains = 10,
-    n_cores = n_chains,
+    n_cores = 1,
     n_iter = 300,
     n_adapt = 200
 ) {
+    if (get_os() == 'windows' && n_cores > 1) {
+        stop("Multicore processing is not available on Windows. Please leave n_cores = 1")
+    }
+
     if (is.null(genome)) {
         genome = getBSgenome('BSgenome.Hsapiens.UCSC.hg19')
     }
@@ -144,7 +148,7 @@ get_population_signatures <- function(
 
     if (subset_signatures) {
         message('Subsetting reference signatures on request')
-        reference_signatures <- subset_reference_signatures(catalog, reference_signatures)
+        reference_signatures <- subset_reference_signatures(catalog, reference_signatures, n_cores = n_cores)
     }
 
     message(sprintf(
