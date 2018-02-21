@@ -19,6 +19,7 @@
 #'
 #' @import dplyr
 #' @import readr
+#' @import parallel
 #'
 #' @export
 
@@ -28,10 +29,14 @@ get_exposures <- function(
     n_chains = 4, 
     n_iter = 200, 
     n_adapt = 200, 
-    n_cores = n_chains,
+    n_cores = 1,
     stan_model = NULL,
     quiet = FALSE
 ) {
+    if (get_os() == 'windows' && n_cores > 1) {
+        stop("Multicore processing is not available on Windows. Please leave n_cores = 1")
+    }
+
     if (is.null(stan_model)) {
         stan_model <- stanmodels$signature_model
     }

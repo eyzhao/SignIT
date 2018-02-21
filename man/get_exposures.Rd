@@ -5,7 +5,7 @@
 \title{Compute the MCMC sample space of exposure vectors}
 \usage{
 get_exposures(mutation_catalog, reference_signatures = NULL, n_chains = 4,
-  n_iter = 200, n_adapt = 200, n_cores = n_chains, stan_model = NULL,
+  n_iter = 200, n_adapt = 200, n_cores = 1, stan_model = NULL,
   quiet = FALSE)
 }
 \arguments{

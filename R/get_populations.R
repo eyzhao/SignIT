@@ -39,6 +39,10 @@ get_populations <- function(
     n_adapt = 200, 
     n_cores = n_chains
 ) {
+    if (get_os() == 'windows' && n_cores > 1) {
+        stop("Multicore processing is not available on Windows. Please leave n_cores = 1")
+    }
+
     mutation_table <- mutation_table %>% distinct()
     n_mutations <- dim(mutation_table)[1]
 
