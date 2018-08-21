@@ -1,0 +1,239 @@
+---
+title: 'SignIT: Simulations'
+author: "Eric Zhao"
+date: "July 19, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+devtools::load_all('scripts/msimR')
+devtools::load_all('scripts/SignIT')
+devtools::load_all('scripts/SignatureEstimation')
+
+library(ggraph)
+library(deconstructSigs)
+library(cowplot)
+```
+
+# Presence of "novel" signatures
+
+The following simulation shows what happens when novel signatures are present.
+
+```{r create_test_reference_signatures, fig.width = 8, fig.height = 8}
+normalize <- function(v) {
+  return(v / sum(v))
+}
+
+n_signatures = 8
+n_mutations = 10000
+reference_signatures <- get_reference_signatures()
+
+mode = 'demo'
+
+if (mode == 'random') {
+  chosen_signatures <- sample(paste('Signature', 1:30), size = n_signatures, replace = F)
+  omitted_signature <- sample(chosen_signatures, size = 1)
+  remaining_signatures <- names(reference_signatures)[! names(reference_signatures) == omitted_signature]
+
+  test_ref <- reference_signatures[, c('mutation_type', chosen_signatures)]
+  known_ref <- reference_signatures[, remaining_signatures]
+  
+  exposures <- tibble(
+    signature = reference_signatures %>% select(-mutation_type) %>% names()
+  ) %>%
+    mutate(
+      exposure = if_else(
+        signature %in% chosen_signatures, 
+        runif(n()),
+        0
+      ),
+      exposure = normalize(exposure) * n_mutations
+    )
+  
+  simulated_catalog <- msimR::get_simulated_mutation_catalog(
+    signatures = reference_signatures, 
+    exposures = exposures
+  )
+} else if (mode == 'demo') {
+  data('missing_signature_demo_data')
+  attach(missing_signature_demo_data)
+}
+
+signit_exposures <- get_exposures(simulated_catalog, known_ref)
+plot_exposure_posteriors_bleed(signit_exposures)
+plot_nnls_solution(signit_exposures) %>% print
+
+
+
+deconstructsigs_data <- as.data.frame(simulated_catalog) %>% 
+  mutate(sample = 'x', count = count/sum(count)) %>%
+  spread(mutation_type, count) %>%
+  column_to_rownames('sample')
+dsigs_signatures <- known_ref %>%
+  as.data.frame %>%
+  gather(signature, probability, -mutation_type) %>%
+  spread(mutation_type, probability) %>%
+  mutate(
+    signature = gsub(' ', '.', signature),
+    signature = factor(signature, levels = paste('Signature', 1:30, sep = '.'))
+  ) %>%
+  arrange(signature) %>%
+  column_to_rownames('signature')
+dsigs_exposures <- whichSignatures(deconstructsigs_data, signatures.ref = dsigs_signatures)
+deconstructSigs::makePie(dsigs_exposures)
+
+sigest_exposures <- suboptimalSigExposures(
+  m = simulated_catalog$count %>% as.matrix(),
+  P = reference_signatures_as_matrix(known_ref, simulated_catalog),
+  R = 1000,
+) %>%
+  .$exposures %>%
+  as.data.frame() %>%
+  rownames_to_column('signature') %>%
+  gather(replicate, exposure, -signature) %>%
+  as_tibble()
+  
+exposures %>% filter(exposure != 0)
+
+true_exposure_plot <- exposures %>%
+  mutate(
+    signature = gsub('Signature ', '', signature) %>% factor(levels = 1:30)
+  ) %>%
+  ggplot(aes(
+    x = signature,
+    y = exposure
+  )) +
+  geom_point() +
+  labs(
+    y = 'Exposure\n(Mutations)'
+  ) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+
+sigest_exposure_plot <- sigest_exposures %>%
+  mutate(
+    signature = gsub('Signature ', '', signature) %>% factor(levels = 1:30),
+    exposure = exposure * n_mutations
+  ) %>%
+  ggplot(aes(
+    x = signature,
+    y = exposure
+  )) +
+  geom_violin() +
+  labs(
+    y = 'Exposure\n(Mutations)'
+  ) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+
+dsigs_exposure_plot <- dsigs_exposures$weights %>%
+  as.data.frame %>%
+  gather('signature', 'exposure') %>%
+  bind_rows(tribble(
+    ~signature, ~exposure,
+    'Unknown', 1 - sum(dsigs_exposures$weights)
+  )) %>%
+  mutate(
+    signature = gsub('Signature.', '', signature) %>% factor(levels = c(1:30, 'Unknown')),
+    exposure = exposure * n_mutations
+  ) %>%
+  ggplot(aes(
+    x = signature,
+    y = exposure
+  )) +
+  geom_point() +
+  labs(
+    y = 'Exposure\n(Mutations)'
+  ) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+
+signit_exposures$exposure_chain %>%
+  mutate(signature = gsub('Signature ', '', signature) %>% factor(levels = 1:30)) %>%
+  ggplot(aes(
+    x = signature,
+    y = exposure
+  )) +
+  geom_violin() +
+  scale_x_discrete(drop = F) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+
+signit_exposure_plot <- plot_exposure_posteriors(signit_exposures) +
+  scale_x_discrete(drop = F) +
+  labs(
+    y = 'Exposure\n(Mutations)'
+  )
+
+plot_grid(
+  true_exposure_plot,
+  dsigs_exposure_plot,
+  sigest_exposure_plot,
+  signit_exposure_plot,
+  ncol = 1,
+  rel_heights = c(1, 1.2, 1, 1)
+)
+```
+
+```{r test_bleed_collapsing, fig.height=8, fig.width = 8}
+plot_signature <- function(catalog) {
+  catalog %>%
+    mutate(
+      context = gsub('(.)\\[(.)>(.)\\](.)', '\\1\\4', mutation_type),
+      base_change = gsub('(.)\\[(.)>(.)\\](.)', '\\2>\\3', mutation_type)
+    ) %>%
+    ggplot(aes(
+      x = context,
+      y = count
+    )) +
+    facet_grid(. ~ base_change) +
+    geom_bar(stat = 'identity')
+}
+
+collapsed_exposures = collapse_signatures_by_bleed(signit_exposures)
+
+collapsed_exposures_signit_plot <- plot_exposure_posteriors_bleed(collapsed_exposures)
+
+plot_grid(
+  true_exposure_plot,
+  collapsed_exposures_signit_plot,
+  ncol = 1,
+  rel_heights = c(1,2)
+)
+
+exposures %>%
+  filter(exposure > 0)
+```
+
+```{r plot_new_signatures, fig.height = 10, fig.width = 8}
+merged_signature_names = with(
+  collapsed_exposures, 
+  signature_names[! signature_names %in% signit_exposures$signature_names]
+)
+
+merged_signature_table <- collapsed_exposures$reference_signatures %>%
+  gather(signature, probability, -mutation_type) %>%
+  filter(signature %in% merged_signature_names)
+
+omitted_signature_spectrum <- reference_signatures[, c('mutation_type', omitted_signature)] %>%
+  gather(signature, probability, -mutation_type) %>%
+  mutate(signature = paste('Hidden: ', signature))
+
+merged_signature_table %>%
+  bind_rows(omitted_signature_spectrum) %>%
+  mutate(
+    context = gsub('(.)\\[.>.\\](.)', '\\1\\2', mutation_type),
+    base_change = gsub('.\\[(.>.)\\].', '\\1', mutation_type),
+    signature = gsub('Signature ', '', signature)
+  ) %>%
+  ggplot(aes(
+    x = context,
+    y = probability
+  )) +
+  facet_grid(signature ~ base_change) +
+  geom_bar(stat = 'identity') +
+  theme(
+    axis.text.x = element_text(angle = 90, size = 6, hjust = 1, vjust = 0.5)
+  )
+```
+
+
