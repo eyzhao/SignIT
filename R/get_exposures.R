@@ -80,7 +80,8 @@ get_exposures <- function(
             control = list(
             ),
             open_progress = (! quiet) && progress_base,
-            show_messages = ! quiet
+            show_messages = ! quiet,
+            refresh = if_else(quiet, -1, 10)
         )
 
         fit <- stan_object %>% as.array
@@ -124,3 +125,32 @@ get_exposures <- function(
   ))
 }
 
+
+#' Watanabe-Akaike Information Criterion for Signatures
+#'
+#' @param mcmc_output    Output from \code{\link{get_exposures}}.
+#'
+#' @return WAIC value
+#'
+#' @import loo
+#' @export
+
+compute_signatures_waic <- function(mcmc_output) {
+    log_lik <- extract_log_lik(mcmc_output$model)
+    return(waic(log_lik)$waic)
+}
+
+
+#' Watanabe-Akaike Information Criterion for Signatures
+#'
+#' @param mcmc_output    Output from \code{\link{get_exposures}}.
+#'
+#' @return WAIC value
+#'
+#' @import loo
+#' @export
+
+compute_signatures_waic <- function(mcmc_output) {
+    log_lik <- extract_log_lik(mcmc_output$model)
+    return(waic(log_lik)$waic)
+}

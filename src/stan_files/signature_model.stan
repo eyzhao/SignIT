@@ -18,7 +18,13 @@ transformed parameters {
 }
 
 model {
-  v ~ multinomial(sim_catalog_prob);
   exposures ~ dirichlet(rep_vector(1, S));
+  v ~ multinomial(sim_catalog_prob);
+}
+
+generated quantities {
+  real log_lik;
+
+  log_lik = multinomial_lpmf(v | sim_catalog_prob);
 }
 

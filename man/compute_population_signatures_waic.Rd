@@ -4,8 +4,7 @@
 \alias{compute_population_signatures_waic}
 \title{Watanabe-Akaike Information Criterion for Population Signatures}
 \usage{
-compute_population_signatures_waic(mcmc_output, parallel = FALSE,
-  n_cores = 1)
+compute_population_signatures_waic(mcmc_output)
 }
 \arguments{
 \item{population_mcmc_output}{Output from \code{\link{get_population_signatures}}.}

@@ -31,7 +31,7 @@ plot_exposure_posteriors_bleed <- function(
     plot_heights = c(1,1),
     units = 'mutations'
 ) {
-    bleed_graph <- get_signature_bleed_graph(exposures_mcmc_output, min_bleed)
+    bleed_graph <- get_signature_bleed_graph(exposures_mcmc_output, min_bleed = min_bleed)
 
     bleed_plot <- bleed_graph %>%
         ggraph(layout = 'linear') +

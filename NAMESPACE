@@ -2,6 +2,7 @@
 
 export(all_snv_mutation_types)
 export(compute_population_signatures_waic)
+export(compute_signatures_waic)
 export(get_exposure_pairwise_correlations)
 export(get_exposure_summary_table)
 export(get_exposures)
@@ -40,4 +41,5 @@ import(rstan)
 import(tibble)
 import(tidyr)
 importFrom(plyr,ddply)
+importFrom(purrr,accumulate)
 useDynLib(signit, .registration = TRUE)
