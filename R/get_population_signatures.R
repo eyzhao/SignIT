@@ -60,7 +60,7 @@
 #' @import dplyr
 #' @import tidyr
 #' @import tibble
-#' @import BSgenome
+#' @importFrom BSgenome getBSgenome
 #' @import rstan
 #'
 #' @export
@@ -173,6 +173,8 @@ get_population_signatures <- function(
         d = as.numeric(mutation_table$total_depth),
         a = as.numeric(mutation_table$correction)
     )
+
+    print(stan_data)
 
     message('Sampling')
 

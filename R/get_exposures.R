@@ -17,8 +17,7 @@
 #'
 #' @return List containing the MCMC samples, as well as other data such as reference signatures and mutation catalog.
 #'
-#' @import dplyr
-#' @import readr
+#' @import dplyr 
 #'
 #' @export
 

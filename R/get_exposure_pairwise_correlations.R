@@ -7,7 +7,7 @@
 #'
 #' @return A dataframe of pairwise correlation values. One row per signature pair.
 #'
-#' @import dplyr
+#' @importFrom dplyr rename
 #' @import tibble
 #'
 #' @export

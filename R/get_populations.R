@@ -26,7 +26,6 @@
 #' @import dplyr
 #' @import tibble
 #' @import rstan
-#' @import rmutil
 #'
 #' @export
 
@@ -206,6 +205,7 @@ compute_population_bic <- function(mutation_table, population_mcmc_output) {
 #'
 #' @import tidyr
 #' @import dplyr
+#' @importFrom rmutil dbetabinom
 
 compute_population_model_log_likelihood <- function(mutation_table, population_mcmc_output) {
     parameter_estimates <- population_mcmc_output$parameter_estimates
@@ -222,7 +222,7 @@ compute_population_model_log_likelihood <- function(mutation_table, population_m
         mu,
         clone_prop
     ) %>% plyr::ddply(c('idx', 'clone_prop'), function(z) {
-        likelihoods = rmutil::dbetabinom(successes, trials, correction * z$mu, kappa)
+        likelihoods = dbetabinom(successes, trials, correction * z$mu, kappa)
         return(data.frame(
             mutation_id = 1:length(successes),
             likelihoods
