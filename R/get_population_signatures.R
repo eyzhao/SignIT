@@ -83,7 +83,8 @@ get_population_signatures <- function(
     }
 
     stopifnot(
-        length(prevalences) == n_populations || is.null(prevalences) || is.null(n_populations)
+        length(prevalences) == n_populations || is.null(prevalences) || is.null(n_populations),
+        is.null(prevalences) || sum(prevalences) == 1
     )
 
     if (is.null(genome)) {
