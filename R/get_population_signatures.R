@@ -210,7 +210,7 @@ get_population_signatures <- function(
             L = n_populations,
             x = as.numeric(mutation_table$alt_depth),
             d = as.numeric(mutation_table$total_depth),
-            a = as.numeric(mutation_table$correction)
+            a = as.numeric(mutation_table$correction),
             mu = as.numeric(prevalences)
         )
     }

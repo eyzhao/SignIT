@@ -12,6 +12,8 @@
 #'
 #' @import tidyr
 #' @import dplyr
+#'
+#' @export
 
 normalize_reference_signatures <- function(reference_signature_df) {
     # Ensure reference signature columns add to 1

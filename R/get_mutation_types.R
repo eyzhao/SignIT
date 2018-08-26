@@ -28,7 +28,7 @@ all_snv_mutation_types <- function() {
 #'
 #' @return          Character vector of trinucleotide contexts
 #'
-#' @import BSgenome
+#' @importFrom BSgenome getBSgenome getSeq
 #' @import dplyr
 
 get_trinucleotide <- function(chr, pos, ref, genome = NULL) {
