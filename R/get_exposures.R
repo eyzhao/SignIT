@@ -26,6 +26,7 @@
 get_exposures <- function(
     mutation_catalog,
     reference_signatures = NULL, 
+    priors = NULL,
     n_chains = 4, 
     n_iter = 200, 
     n_adapt = 200, 
@@ -38,7 +39,15 @@ get_exposures <- function(
     }
 
     if (is.null(stan_model)) {
-        stan_model <- stanmodels$signature_model
+        if (is.null(priors)) {
+            stan_model <- stanmodels$signature_model
+        } else {
+            stan_model <- stanmodels$signature_model_prior
+            stopifnot(
+                all(priors$prior < 1),
+                all(priors$prior > 0)
+            )
+        }
     }
 
     if (! 'mutation_type' %in% names(mutation_catalog) || ! 'count' %in% names(mutation_catalog)) {
@@ -65,6 +74,12 @@ get_exposures <- function(
             v = mutation_catalog$count,
             ref_signatures = reference_signatures %>% reference_signatures_as_matrix(mutation_catalog)
         )
+        if (! is.null(priors)) {
+            stan_data$prior = priors %>%
+                mutate(signature = factor(signature, levels = signature_names)) %>%
+                arrange(signature) %>%
+                .$prior
+        }
 
         message('Sampling')
         
