@@ -5,12 +5,15 @@
 \title{Plot the signature exposure posterior distributions}
 \usage{
 plot_exposure_posteriors(exposures_mcmc_output, view = "violin",
-  signature_trim = "Signature")
+  signature_trim = "Signature", units = "mutations")
 }
 \arguments{
 \item{exposures_mcmc_output}{Output from get_exposures.}
 
 \item{view}{Can be either "violin" or "boxplot".}
+
+\item{units}{Units to present exposures in. Can be
+'mutations', 'megabase', or 'fraction'.}
 }
 \value{
 A ggplot plot of the posterior distributions.

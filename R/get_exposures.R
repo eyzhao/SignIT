@@ -17,7 +17,9 @@
 #'
 #' @return List containing the MCMC samples, as well as other data such as reference signatures and mutation catalog.
 #'
-#' @import dplyr 
+#' @import dplyr
+#' @import readr
+#' @import parallel
 #'
 #' @export
 
@@ -27,10 +29,14 @@ get_exposures <- function(
     n_chains = 4, 
     n_iter = 200, 
     n_adapt = 200, 
-    n_cores = n_chains,
+    n_cores = 1,
     stan_model = NULL,
     quiet = FALSE
 ) {
+    if (get_os() == 'windows' && n_cores > 1) {
+        stop("Multicore processing is not available on Windows. Please leave n_cores = 1")
+    }
+
     if (is.null(stan_model)) {
         stan_model <- stanmodels$signature_model
     }
@@ -74,7 +80,8 @@ get_exposures <- function(
             control = list(
             ),
             open_progress = (! quiet) && progress_base,
-            show_messages = ! quiet
+            show_messages = ! quiet,
+            refresh = if_else(quiet, -1, 10)
         )
 
         fit <- stan_object %>% as.array
@@ -118,3 +125,32 @@ get_exposures <- function(
   ))
 }
 
+
+#' Watanabe-Akaike Information Criterion for Signatures
+#'
+#' @param mcmc_output    Output from \code{\link{get_exposures}}.
+#'
+#' @return WAIC value
+#'
+#' @import loo
+#' @export
+
+compute_signatures_waic <- function(mcmc_output) {
+    log_lik <- extract_log_lik(mcmc_output$model)
+    return(waic(log_lik)$waic)
+}
+
+
+#' Watanabe-Akaike Information Criterion for Signatures
+#'
+#' @param mcmc_output    Output from \code{\link{get_exposures}}.
+#'
+#' @return WAIC value
+#'
+#' @import loo
+#' @export
+
+compute_signatures_waic <- function(mcmc_output) {
+    log_lik <- extract_log_lik(mcmc_output$model)
+    return(waic(log_lik)$waic)
+}

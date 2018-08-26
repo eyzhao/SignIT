@@ -4,6 +4,13 @@
 #' @param exposures_mcmc_output     Output from get_exposures.
 #' @param view                      Can be either "violin" or "boxplot" (default: "violin")
 #' @param min_bleed                 Bleed threshold, between 0 and 1. Default: 0.2.
+#' @param signature_trim            Text to be trimmed off of the x-axis signature
+#'                                      labels.
+#' @param legend                    Boolean - whether or not to include the legend.
+#' @param plot_heights              Vector of 2 numbers denoting relative heights
+#'                                      of exposure plot and bleed graph.
+#' @param units                     Units to present exposures in. Can be
+#'                                      'mutations', 'megabase', or 'fraction'.
 #'
 #' @return A cowplot merge of two ggplots showing the posterior distributions and signature bleed.
 #'
@@ -15,8 +22,16 @@
 #' @export
 
 
-plot_exposure_posteriors_bleed <- function(exposures_mcmc_output, view='violin', min_bleed = 0.2, signature_trim='Signature', legend = TRUE, plot_heights = c(1,1)) {
-    bleed_graph <- get_signature_bleed_graph(exposures_mcmc_output, min_bleed)
+plot_exposure_posteriors_bleed <- function(
+    exposures_mcmc_output,
+    view='violin',
+    min_bleed = 0.2,
+    signature_trim='Signature',
+    legend = TRUE,
+    plot_heights = c(1,1),
+    units = 'mutations'
+) {
+    bleed_graph <- get_signature_bleed_graph(exposures_mcmc_output, min_bleed = min_bleed)
 
     bleed_plot <- bleed_graph %>%
         ggraph(layout = 'linear') +
@@ -35,7 +50,12 @@ plot_exposure_posteriors_bleed <- function(exposures_mcmc_output, view='violin',
         scale_y_continuous(limits = c(-15, 0), expand = c(-0.005, 0)) +
         scale_x_discrete(labels = exposures_mcmc_output$signature_names)
 
-    posterior_plot <- plot_exposure_posteriors(exposures_mcmc_output, view=view, signature_trim=signature_trim) +
+    posterior_plot <- plot_exposure_posteriors(
+        exposures_mcmc_output,
+        view=view,
+        signature_trim=signature_trim,
+        units = units
+    ) +
         theme(
             axis.title.x = element_blank()
         )

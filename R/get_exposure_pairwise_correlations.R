@@ -19,7 +19,11 @@ get_exposure_pairwise_correlations <- function(exposures_mcmc_output) {
       exposures_mcmc_output$exposure_chain %>%
         rename(signature_2 = signature) %>%
         plyr::ddply('signature_2', function(signature_2_chain) {
-          tibble(spearman = cor(signature_1_chain$exposure, signature_2_chain$exposure, method = 'spearman'))
+          exp_table = tibble(sig_a = signature_1_chain$exposure, sig_b = signature_2_chain$exposure)
+          tibble(
+            spearman = with(exp_table, cor(sig_a, sig_b, method = 'spearman')),
+            slope = lm(sig_b ~ sig_a, data = exp_table)$coefficients['sig_a']
+          )
         })
     })
 }

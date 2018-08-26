@@ -357,7 +357,7 @@ compute_population_signatures_bic <- function(mcmc_output) {
 #' @import loo
 #' @export
 
-compute_population_signatures_waic <- function(mcmc_output, parallel = FALSE, n_cores = 1) {
+compute_population_signatures_waic <- function(mcmc_output) {
     log_lik <- extract_log_lik(mcmc_output$mcmc_output)
     return(waic(log_lik)$waic)
 }

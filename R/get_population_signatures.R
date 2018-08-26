@@ -73,10 +73,20 @@ get_population_signatures <- function(
     genome = NULL,
     method = 'vb',
     n_chains = 10,
-    n_cores = n_chains,
+    n_cores = 1,
     n_iter = 300,
-    n_adapt = 200
+    n_adapt = 200,
+    prevalences = NULL
 ) {
+    if (get_os() == 'windows' && n_cores > 1) {
+        stop("Multicore processing is not available on Windows. Please leave n_cores = 1")
+    }
+
+    stopifnot(
+        length(prevalences) == n_populations || is.null(prevalences) || is.null(n_populations),
+        is.null(prevalences) || all(prevalences < 1)
+    )
+
     if (is.null(genome)) {
         genome = getBSgenome('BSgenome.Hsapiens.UCSC.hg19')
     }
@@ -123,56 +133,87 @@ get_population_signatures <- function(
         mutations_to_catalog(chr, pos, ref, alt)
     )
 
-    if (is.null(n_populations)) {
-        message('No number of populations provided. Will run automatic model selection.')
-        n_population_selection <- select_n_populations(mutation_table)
-
-        n_populations <- n_population_selection$optimal_n_populations
-        mu <- n_population_selection$evaluated_models[[n_populations]]$parameter_estimates$mu
-        kappa <- n_population_selection$evaluated_models[[n_populations]]$parameter_estimates$kappa
-
-        message(sprintf('Engaged auto-selection of clusters. Chose a model with %s clusters.', n_populations))
-    } else {
-        message(sprintf('Extracting parameters from population model with %s populations', n_populations))
-
-        n_population_selection <- NULL
-    }
-
     if (is.null(reference_signatures)) {
         reference_signatures <- get_reference_signatures() 
     }
 
     if (subset_signatures) {
         message('Subsetting reference signatures on request')
-        reference_signatures <- subset_reference_signatures(catalog, reference_signatures)
+        reference_signatures <- subset_reference_signatures(catalog, reference_signatures, n_cores = n_cores)
     }
 
     reference_signatures <- normalize_reference_signatures(reference_signatures)
 
-    message(sprintf(
-        'Running model with provided reference signatures: %s signatures, %s mutations, and %s clusters',
-        reference_signatures %>% select(-mutation_type) %>% ncol,
-        mutation_table %>% nrow,
-        n_populations
-    ))
+    if (is.null(prevalences)) {
+        if (is.null(n_populations)) {
+            message('No number of populations provided. Will run automatic model selection.')
+            n_population_selection <- select_n_populations(mutation_table)
 
-    stan_dso = stanmodels$signit_model_infer_populations
+            n_populations <- n_population_selection$optimal_n_populations
+            mu <- n_population_selection$evaluated_models[[n_populations]]$parameter_estimates$mu
+            kappa <- n_population_selection$evaluated_models[[n_populations]]$parameter_estimates$kappa
 
-    stan_data = list(
-        N = nrow(mutation_table),
+            message(sprintf('Engaged auto-selection of clusters. Chose a model with %s clusters.', n_populations))
+        } else {
+            message(sprintf('Extracting parameters from population model with %s populations', n_populations))
 
-        # Signature-specific data
-        K = reference_signatures %>% select(-mutation_type) %>% dim %>% .[2],
-        R = reference_signatures %>% dim %>% .[1],
-        v = factor(mutation_table$mutation_type, levels = reference_signatures$mutation_type) %>% as.numeric,
-        ref_signatures = reference_signatures %>% select(-mutation_type) %>% t,
+            n_population_selection <- NULL
+        }
 
-        # Clonality-specific data
-        L = n_populations,
-        x = as.numeric(mutation_table$alt_depth),
-        d = as.numeric(mutation_table$total_depth),
-        a = as.numeric(mutation_table$correction)
-    )
+        message(sprintf(
+            'Running model with provided reference signatures: %s signatures, %s mutations, and %s clusters',
+            reference_signatures %>% select(-mutation_type) %>% ncol,
+            mutation_table %>% nrow,
+            n_populations
+        ))
+
+        stan_dso = stanmodels$signit_model_infer_populations
+
+        stan_data = list(
+            N = nrow(mutation_table),
+
+            # Signature-specific data
+            K = reference_signatures %>% select(-mutation_type) %>% dim %>% .[2],
+            R = reference_signatures %>% dim %>% .[1],
+            v = factor(mutation_table$mutation_type, levels = reference_signatures$mutation_type) %>% as.numeric,
+            ref_signatures = reference_signatures %>% select(-mutation_type) %>% t,
+
+            # Clonality-specific data
+            L = n_populations,
+            x = as.numeric(mutation_table$alt_depth),
+            d = as.numeric(mutation_table$total_depth),
+            a = as.numeric(mutation_table$correction)
+        )
+
+    } else {
+        message(sprintf('Using predetermined population prevalences: %s', paste(prevalences, ', ')))
+
+        message(sprintf(
+            'Running model with provided reference signatures: %s signatures, %s mutations, and %s clusters',
+            reference_signatures %>% select(-mutation_type) %>% ncol,
+            mutation_table %>% nrow,
+            n_populations
+        ))
+
+        stan_dso = stanmodels$signit_model
+
+        stan_data = list(
+            N = nrow(mutation_table),
+
+            # Signature-specific data
+            K = reference_signatures %>% select(-mutation_type) %>% dim %>% .[2],
+            R = reference_signatures %>% dim %>% .[1],
+            v = factor(mutation_table$mutation_type, levels = reference_signatures$mutation_type) %>% as.numeric,
+            ref_signatures = reference_signatures %>% select(-mutation_type) %>% t,
+
+            # Clonality-specific data
+            L = n_populations,
+            x = as.numeric(mutation_table$alt_depth),
+            d = as.numeric(mutation_table$total_depth),
+            a = as.numeric(mutation_table$correction)
+            mu = as.numeric(prevalences)
+        )
+    }
 
     print(stan_data)
 

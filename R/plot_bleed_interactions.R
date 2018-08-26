@@ -1,6 +1,8 @@
 #' Creates a circular plot with links between signatures that bleed into each other.
 #'
 #' @param exposures_mcmc_output           Output from get_exposures.
+#' @param pairwise_correlations           Output from get_exposure_pairwise_correlations. Not required if
+#'                                              exposures_mcmc_output is provided.
 #' @param min_bleed                       Minimum bleed threshold, below which edges are removed.
 #'
 #' @import ggraph
@@ -10,8 +12,8 @@
 #'
 #' @export
 
-plot_bleed_interactions <- function(exposures_mcmc_output, min_bleed=0.2) {
-  bleed_graph <- get_signature_bleed_graph(exposures_mcmc_output, min_bleed)
+plot_bleed_interactions <- function(exposures_mcmc_output = NULL, pairwise_correlations = NULL, min_bleed=0.2) {
+  bleed_graph <- get_signature_bleed_graph(exposures_mcmc_output, pairwise_correlations, min_bleed)
 
   p <- bleed_graph %>%
     ggraph(layout = 'linear', circular=TRUE) +

@@ -11,8 +11,17 @@
 #' @import dplyr
 #' @import tidyr
 
-get_signature_bleed_graph <- function(exposure_output, min_bleed) {
-  correl <- get_exposure_pairwise_correlations(exposure_output)
+get_signature_bleed_graph <- function(exposure_output = NULL, pairwise_correlations = NULL, min_bleed = 0.2) {
+  stopifnot(
+    ! is.null(exposure_output) || ! is.null(pairwise_correlations),
+    ! (! is.null(exposure_output) && ! is.null(pairwise_correlations))
+  )
+
+  if (! is.null(exposure_output)) {
+    correl <- get_exposure_pairwise_correlations(exposure_output)
+  } else {
+    correl <- pairwise_correlations
+  }
   
   g <- correl %>%
     unite(sig_pair, signature_1, signature_2, sep='||') %>%
@@ -21,11 +30,11 @@ get_signature_bleed_graph <- function(exposure_output, min_bleed) {
     ungroup() %>%
     separate(sig_pair, c('from', 'to'), sep='\\|\\|') %>%
     graph_from_data_frame
-  
+
   order_vector <- sapply(
     V(g)$name, 
     function(z) {
-      which(exposure_output$signature_names == z)
+      which(levels(correl$signature_1) == z)
     })
   
   g %>%

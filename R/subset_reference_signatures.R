@@ -17,7 +17,7 @@
 #' @import tidyr
 #' @import dplyr
 
-subset_reference_signatures <- function(catalog, reference_signatures, threshold = NULL) {
+subset_reference_signatures <- function(catalog, reference_signatures, threshold = NULL, n_cores = 1) {
     n_mutations <- sum(catalog$count)
     
     if (is.null(threshold)) {
@@ -25,7 +25,7 @@ subset_reference_signatures <- function(catalog, reference_signatures, threshold
     }
 
     exposures <- catalog %>% 
-        get_exposures(quiet = TRUE) %>% 
+        get_exposures(quiet = TRUE, n_cores = n_cores) %>% 
         get_exposure_summary_table %>% 
         mutate(signature_present = `2.5%` > threshold)
 
