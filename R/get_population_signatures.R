@@ -188,6 +188,9 @@ get_population_signatures <- function(
     } else {
         message(sprintf('Using predetermined population prevalences: %s', paste(prevalences, ', ')))
 
+        n_population_selection <- NULL
+        n_populations <- length(prevalences)
+
         message(sprintf(
             'Running model with provided reference signatures: %s signatures, %s mutations, and %s clusters',
             reference_signatures %>% select(-mutation_type) %>% ncol,
