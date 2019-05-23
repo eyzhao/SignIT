@@ -21,9 +21,9 @@ transformed parameters {
 model {
   for (s in 1:S) {
     if (exposures[s] < 0.001) {
-      target += log(1 - prior[s]);
+      target += log((1 - prior[s])/0.001);
     } else {
-      target += log(prior[s]);
+      target += log(prior[s] / 0.999);
     }
   }
   v ~ multinomial(sim_catalog_prob);

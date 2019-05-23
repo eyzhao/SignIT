@@ -4,7 +4,8 @@
 \alias{get_signature_bleed_graph}
 \title{Graph Representing Signature Bleed Relationships}
 \usage{
-get_signature_bleed_graph(exposure_output, min_bleed)
+get_signature_bleed_graph(exposure_output = NULL,
+  pairwise_correlations = NULL, min_bleed = 0.2)
 }
 \arguments{
 \item{exposure_output}{Output from get_exposures}

@@ -4,9 +4,9 @@
 \alias{get_exposures}
 \title{Compute the MCMC sample space of exposure vectors}
 \usage{
-get_exposures(mutation_catalog, reference_signatures = NULL, n_chains = 4,
-  n_iter = 200, n_adapt = 200, n_cores = 1, stan_model = NULL,
-  quiet = FALSE)
+get_exposures(mutation_catalog, reference_signatures = NULL, priors = NULL,
+  n_chains = 4, n_iter = 200, n_adapt = 200, n_cores = 1,
+  stan_model = NULL, quiet = FALSE, z_value = 1.96)
 }
 \arguments{
 \item{mutation_catalog}{Data frame with columns mutation_type, count. The mutation types
@@ -19,6 +19,11 @@ must be equivalent to those in reference_signatures.}
 \item{n_iter}{Number of iterations per chain. Total iterations will be n_chains times n_iter.}
 
 \item{n_adapt}{Number of burn-in iterations}
+
+\item{z_value}{The z value for determining presence/absence of signatures.
+Determines the confidence bounds (z times standard deviation).
+Signature is called absent if zero falls within the interval.
+Higher z_values increase specificity and lower z_values increase sensitivity.}
 }
 \value{
 List containing the MCMC samples, as well as other data such as reference signatures and mutation catalog.

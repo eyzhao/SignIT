@@ -72,6 +72,7 @@ collapse_signatures_by_bleed_all_solutions <- function(exposure_mcmc_output, ble
       
       message(sprintf('%s signature solution obtained.', new_ref_signatures %>% select(-mutation_type) %>% names() %>% length))
 
+      new_exposures$waic = compute_signatures_waic(new_exposures)
       new_exposures$signature_names <- c(
         previous_exposures$signature_names[previous_exposures$signature_names %in% new_exposures$signature_names],
         new_exposures$signature_names[! new_exposures$signature_names %in% previous_exposures$signature_names]
@@ -106,7 +107,7 @@ collapse_signatures_by_bleed <- function(exposure_mcmc_output, bleed_threshold=0
   
   waic_values <- sapply(new_exposures, function(z) {
     if (!is.null(z)) {
-      suppressMessages(suppressWarnings(compute_signatures_waic(z)))
+      z$waic
     }
   }) %>% unlist
   
