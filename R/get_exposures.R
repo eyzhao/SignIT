@@ -15,11 +15,6 @@
 #'
 #' @param n_adapt               Number of burn-in iterations
 #'
-#' @param z_value               The z value for determining presence/absence of signatures.
-#'                              Determines the confidence bounds (z times standard deviation).
-#'                              Signature is called absent if zero falls within the interval.
-#'                              Higher z_values increase specificity and lower z_values increase sensitivity.
-#'
 #' @return List containing the MCMC samples, as well as other data such as reference signatures and mutation catalog.
 #'
 #' @import dplyr
@@ -37,8 +32,7 @@ get_exposures <- function(
     n_adapt = 200, 
     n_cores = 1,
     stan_model = NULL,
-    quiet = FALSE,
-    z_value = 1.96
+    quiet = FALSE
 ) {
     if (get_os() == 'windows' && n_cores > 1) {
         stop("Multicore processing is not available on Windows. Please leave n_cores = 1")
@@ -135,7 +129,7 @@ get_exposures <- function(
         stan_object <- NULL
     }
 
-  signature_present_table <- signature_present(exposure_chain, z_value=z_value)
+  signature_present_table <- signature_present(exposure_chain)
  
   return(list(
     sampling_tool = 'stan',
@@ -161,7 +155,9 @@ get_exposures <- function(
 #' @import dplyr
 #' @export
 
-signature_present <- function(exposure_chain, z_value = 1.96) {
+signature_present <- function(exposure_chain) {
+  z_value = ifelse(n_mutations < 30000, 1, 32.26 * log10(n_mutations) - 143.421)
+
   exposure_chain %>%
     plyr::ddply('signature', function(signature_chain) {
       normal_fit <- fitdistr(signature_chain$exposure, 'normal')
