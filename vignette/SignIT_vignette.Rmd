@@ -11,7 +11,8 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, fig.path = 'figures/', dev = c('png'), dpi = 300)
 
-library(signit)
+#library(signit)
+devtools::load_all('../')
 library(nnls)
 library(tidyverse)
 library(rstan)

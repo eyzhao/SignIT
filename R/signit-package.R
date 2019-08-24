@@ -1,11 +1,11 @@
-#' The 'signit' package.
+#' The 'SignIT' package.
 #'
 #' @description A DESCRIPTION OF THE PACKAGE
 #'
 #' @docType package
-#' @name signit-package
-#' @aliases signit
-#' @useDynLib signit, .registration = TRUE
+#' @name SignIT-package
+#' @aliases SignIT
+#' @useDynLib SignIT, .registration = TRUE
 #' @import methods
 #' @import Rcpp
 #' @importFrom rstan sampling

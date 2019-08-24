@@ -4,7 +4,7 @@
 \alias{signature_present}
 \title{Determine Presence or Absence of Signatures}
 \usage{
-signature_present(exposure_chain, z_value = 1.96)
+signature_present(exposure_chain, n_mutations)
 }
 \arguments{
 \item{exposure_chain}{Exposure chain table, part of output from get_exposures().}

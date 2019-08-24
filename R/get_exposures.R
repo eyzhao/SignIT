@@ -129,7 +129,7 @@ get_exposures <- function(
         stan_object <- NULL
     }
 
-  signature_present_table <- signature_present(exposure_chain)
+  signature_present_table <- signature_present(exposure_chain, n_mutations)
  
   return(list(
     sampling_tool = 'stan',
@@ -155,7 +155,7 @@ get_exposures <- function(
 #' @import dplyr
 #' @export
 
-signature_present <- function(exposure_chain) {
+signature_present <- function(exposure_chain, n_mutations) {
   z_value = ifelse(n_mutations < 30000, 1, 32.26 * log10(n_mutations) - 143.421)
 
   exposure_chain %>%

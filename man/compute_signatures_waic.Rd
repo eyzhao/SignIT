@@ -2,7 +2,6 @@
 % Please edit documentation in R/get_exposures.R
 \name{compute_signatures_waic}
 \alias{compute_signatures_waic}
-\alias{compute_signatures_waic}
 \title{Watanabe-Akaike Information Criterion for Signatures}
 \usage{
 compute_signatures_waic(mcmc_output)
