@@ -4,9 +4,17 @@
 \alias{get_exposures}
 \title{Compute the MCMC sample space of exposure vectors}
 \usage{
-get_exposures(mutation_catalog, reference_signatures = NULL,
-  priors = NULL, n_chains = 4, n_iter = 200, n_adapt = 200,
-  n_cores = 1, stan_model = NULL, quiet = FALSE)
+get_exposures(
+  mutation_catalog,
+  reference_signatures = NULL,
+  priors = NULL,
+  n_chains = 4,
+  n_iter = 200,
+  n_adapt = 200,
+  n_cores = 1,
+  stan_model = NULL,
+  quiet = FALSE
+)
 }
 \arguments{
 \item{mutation_catalog}{Data frame with columns mutation_type, count. The mutation types

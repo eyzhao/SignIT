@@ -10,8 +10,6 @@ compute_signatures_waic(mcmc_output)
 }
 \arguments{
 \item{mcmc_output}{Output from \code{\link{get_exposures}}.}
-
-\item{mcmc_output}{Output from \code{\link{get_exposures}}.}
 }
 \value{
 WAIC value

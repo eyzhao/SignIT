@@ -4,8 +4,12 @@
 \alias{subset_reference_signatures}
 \title{Automatic subsetting of reference mutation signatures}
 \usage{
-subset_reference_signatures(catalog, reference_signatures,
-  threshold = NULL, n_cores = 1)
+subset_reference_signatures(
+  catalog,
+  reference_signatures,
+  threshold = NULL,
+  n_cores = 1
+)
 }
 \arguments{
 \item{catalog}{Mutation catalog. A data-frame or tibble with columns

@@ -4,8 +4,12 @@
 \alias{plot_two_signature_hexplot}
 \title{Plots a hexplot between two signatures}
 \usage{
-plot_two_signature_hexplot(exposures_mcmc_output, signature_name_1,
-  signature_name_2, trendline = TRUE)
+plot_two_signature_hexplot(
+  exposures_mcmc_output,
+  signature_name_1,
+  signature_name_2,
+  trendline = TRUE
+)
 }
 \arguments{
 \item{exposures_mcmc_output}{Output from get_exposures.}

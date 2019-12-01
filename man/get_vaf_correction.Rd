@@ -17,7 +17,7 @@ Numeric vector of correction factors
 The VAF correction factor adjusts the expected mean variant allele fraction
 }
 \details{
-The correction factor is computed as
+The correction factor is computed as 
 
 \deqn{\frac{p}{C^{(t)} p + C^{(n)} (1-p)}},
 

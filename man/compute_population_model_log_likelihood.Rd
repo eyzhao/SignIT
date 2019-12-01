@@ -4,8 +4,7 @@
 \alias{compute_population_model_log_likelihood}
 \title{Log Likelihood of Population Model}
 \usage{
-compute_population_model_log_likelihood(mutation_table,
-  population_mcmc_output)
+compute_population_model_log_likelihood(mutation_table, population_mcmc_output)
 }
 \arguments{
 \item{mutation_table}{Table of mutation data, same as input for 

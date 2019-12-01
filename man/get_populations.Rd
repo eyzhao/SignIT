@@ -4,8 +4,15 @@
 \alias{get_populations}
 \title{SignIT population model without mutation signatures}
 \usage{
-get_populations(mutation_table, n_populations, method = "mcmc",
-  n_chains = 4, n_iter = 300, n_adapt = 200, n_cores = n_chains)
+get_populations(
+  mutation_table,
+  n_populations,
+  method = "mcmc",
+  n_chains = 4,
+  n_iter = 300,
+  n_adapt = 200,
+  n_cores = n_chains
+)
 }
 \arguments{
 \item{mutation_table}{Table of mutations, same as input to 

@@ -4,8 +4,11 @@
 \alias{get_exposure_summary_table}
 \title{Creates a summary table of exposure statistics}
 \usage{
-get_exposure_summary_table(exposures_mcmc_output, alpha = c(0, 0.05,
-  0.5), fraction = FALSE)
+get_exposure_summary_table(
+  exposures_mcmc_output,
+  alpha = c(0, 0.05, 0.5),
+  fraction = FALSE
+)
 }
 \arguments{
 \item{exposures_mcmc_output}{Output from get_exposures()}

@@ -4,8 +4,11 @@
 \alias{plot_bleed_interactions}
 \title{Creates a circular plot with links between signatures that bleed into each other.}
 \usage{
-plot_bleed_interactions(exposures_mcmc_output = NULL,
-  pairwise_correlations = NULL, min_bleed = 0.2)
+plot_bleed_interactions(
+  exposures_mcmc_output = NULL,
+  pairwise_correlations = NULL,
+  min_bleed = 0.2
+)
 }
 \arguments{
 \item{exposures_mcmc_output}{Output from get_exposures.}

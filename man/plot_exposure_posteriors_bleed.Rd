@@ -5,9 +5,15 @@
 \title{Plot the signature exposure posterior distribution along with a visualization of
 signature bleed interactions.}
 \usage{
-plot_exposure_posteriors_bleed(exposures_mcmc_output, view = "violin",
-  min_bleed = 0.2, signature_trim = "Signature", legend = TRUE,
-  plot_heights = c(1, 1), units = "mutations")
+plot_exposure_posteriors_bleed(
+  exposures_mcmc_output,
+  view = "violin",
+  min_bleed = 0.2,
+  signature_trim = "Signature",
+  legend = TRUE,
+  plot_heights = c(1, 1),
+  units = "mutations"
+)
 }
 \arguments{
 \item{exposures_mcmc_output}{Output from get_exposures.}

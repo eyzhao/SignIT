@@ -4,8 +4,10 @@
 \alias{collapse_signatures_by_bleed_all_solutions}
 \title{Collapse signatures using bleed information}
 \usage{
-collapse_signatures_by_bleed_all_solutions(exposure_mcmc_output,
-  bleed_threshold = 0.4)
+collapse_signatures_by_bleed_all_solutions(
+  exposure_mcmc_output,
+  bleed_threshold = 0.4
+)
 }
 \arguments{
 \item{exposure_mcmc_output}{Output from get_exposures}
